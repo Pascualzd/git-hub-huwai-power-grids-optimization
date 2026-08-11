@@ -1,32 +1,61 @@
-# Hawaiʻi Power Grid Optimization
+# Oʻahu Economic Dispatch
 
-An economic dispatch study of Hawaiʻi's island grids, focused on Oʻahu.
+A reproducible economic-dispatch study of Hawaiʻi's largest island grid. It ports the
+single-period, multi-period, merit-order, and duck-curve structure of Cornell BEE 4750/5750
+to an auditable Oʻahu dataset built from Hawaiian Electric, EIA, EPA, and NREL sources.
 
-The project reproduces the structure of Cornell BEE 4750/5750 Lecture 12,
-["Economic Dispatch"](https://envsys.viveks.me/fall2022/assets/lecture-notes/12-economic-dispatch/index.html)
-(Vivek Srikrishnan) — single-period dispatch, multi-period dispatch with ramping constraints,
-merit order, and the duck curve — but driven by real utility and federal data rather than a
-textbook fleet.
+The current baseline models 24 dispatchable resources (1,508.1 MW summer capacity) against
+Hawaiian Electric's 8,760-hour 2021 base-scenario net-load profile. At the modeled 1,054.3 MW
+annual peak, Waiau W8 is marginal at $134.48/MWh. These are research results, not a production
+unit-commitment, reliability, or emissions-inventory study.
 
-**Toolchain:** Julia + JuMP + HiGHS for the optimization; Python/pandas for data prep;
-Quarto revealjs for the presentation.
+## Reproduce the project
 
-## Start here
+From the repository root:
 
-- **[PROJECT_PLAN.md](PROJECT_PLAN.md)** — the six-step startup plan: repo scaffold, data
-  acquisition, fleet table construction, the models, the analysis, and the deck.
-- **[DATA_SOURCES.md](DATA_SOURCES.md)** — which dataset supplies which model parameter, with
-  links. Read this before going looking for data; there are two non-obvious gaps.
+```bash
+bash scripts/setup.sh
+bash scripts/verify.sh
+```
 
-## The two things that will trip you up
+`setup.sh` installs a pinned, repository-local Quarto 1.10.18 and instantiates the Julia
+environment. `verify.sh` validates the committed processed inputs, solves both models with
+JuMP + HiGHS, regenerates every figure, and renders `slides/_site/index.html`.
 
-1. **Hawaiʻi is not in EIA Form 930.** The Hourly Electric Grid Monitor covers only the
-   Lower 48, so there is no Hawaiʻi hourly demand series there. Hourly load has to come from
-   Hawaiian Electric's Integrated Grid Planning filings. This is the critical path.
-2. **`P^min` and ramp rates are not in any EIA form.** They come from Hawaiian Electric's PSIP
-   and IGP filings with the Hawaiʻi PUC. These are exactly the two parameters the multi-period
-   model turns on, so they cannot be skipped.
+To rebuild the processed data from the large public raw files:
 
-## Status
+```bash
+bash scripts/python scripts/download_data.py
+bash scripts/python scripts/prepare_load.py
+bash scripts/python scripts/prepare_generators.py
+bash scripts/verify.sh
+```
 
-Planning. No code or data committed yet — Step 1 of the plan is the next action.
+The raw downloads are intentionally gitignored. Their exact URLs, vintages, hashes,
+transformations, and limitations are recorded in [SOURCES.md](SOURCES.md).
+
+## Repository map
+
+- `data/processed/` — committed model inputs and outputs
+- `scripts/` — repeatable acquisition, preparation, validation, rendering, and setup
+- `src/EconomicDispatch.jl` — the two optimization formulations and sanity checks
+- `src/run_analysis.jl` — scenario runner and all generated figures
+- `slides/` — Quarto revealjs source and rendered deck
+- `figures/` — code-generated analysis graphics
+- `DATA_SOURCES.md` — source-to-parameter map
+- `SOURCES.md` — exact provenance ledger and modeling boundaries
+
+## Scope boundaries
+
+- Renewables and customer batteries are represented through HECO's filed net-load layers;
+  they are not separately dispatched.
+- The fleet excludes airport emergency units and refinery self-generation.
+- Kalaeloa's two combustion turbines and steam component are one combined-cycle resource.
+- Public current workbooks do not expose unit-level minimum stable output or hourly ramp
+  rates. Every such input is marked as an assumption in `oahu_generators.csv`.
+- The LP has no binary commitment, start cost, minimum up/down time, reserve, outage, network,
+  or storage state-of-charge constraints.
+
+The original implementation brief remains in [PROJECT_PLAN.md](PROJECT_PLAN.md); the
+[current course lecture](https://envsys.viveks.me/fall2025/slides/lecture10-2-economic-dispatch.html)
+provides the textbook comparison used in the deck.

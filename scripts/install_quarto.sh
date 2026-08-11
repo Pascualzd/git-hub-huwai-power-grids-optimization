@@ -12,10 +12,10 @@ if [[ -x "$QUARTO_LINK/bin/quarto" ]]; then
 fi
 
 mkdir -p "$REPO_ROOT/.tools"
-curl --fail --location --retry 3 \
+curl --fail --location --retry 5 --retry-all-errors --http1.1 --continue-at - \
   "https://github.com/quarto-dev/quarto-cli/releases/download/v$QUARTO_VERSION/quarto-$QUARTO_VERSION-macos.tar.gz" \
   --output "$ARCHIVE"
-tar -xzf "$ARCHIVE" -C "$REPO_ROOT/.tools"
+mkdir -p "$QUARTO_ROOT"
+tar -xzf "$ARCHIVE" -C "$QUARTO_ROOT"
 ln -sfn "$QUARTO_ROOT" "$QUARTO_LINK"
 rm "$ARCHIVE"
-
