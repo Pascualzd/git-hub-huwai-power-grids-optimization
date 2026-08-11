@@ -1,0 +1,22 @@
+project:
+  type: website
+  output-dir: _site
+
+format:
+  revealjs:
+    theme: default
+    css: styles.css
+    slide-number: true
+    transition: fade
+    background-transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.055
+    embed-resources: true
+    chalkboard: false
+
+execute:
+  enabled: false
+
+title: "Oʻahu Economic Dispatch"

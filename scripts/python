@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -x /opt/anaconda3/bin/python ]]; then
+  exec /opt/anaconda3/bin/python "$@"
+fi
+
+exec python3 "$@"

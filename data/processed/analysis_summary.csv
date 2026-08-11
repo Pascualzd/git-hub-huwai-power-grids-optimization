@@ -1,0 +1,11 @@
+metric,value
+annual_net_peak_hour,6331
+annual_net_peak_mw,1054.258
+peak_hour_dispatch_cost_usd,117912.86
+peak_hour_marginal_cost_usd_per_mwh,134.483
+peak_hour_emissions_tonnes_co2,880.353
+peak_day_dispatch_cost_usd,2.11538354e6
+peak_day_emissions_tonnes_co2,16108.465
+marginal_generator,Waiau W8
+strongest_duck_curve_day_of_year,261
+fleet_summer_capacity_mw,1508.1
