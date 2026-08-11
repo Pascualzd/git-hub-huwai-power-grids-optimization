@@ -52,19 +52,19 @@ The modeled fleet must satisfy every hour with resources located on the island�
 <div class="two-col">
 <div>
 
-**Load**  
+**Load**<br>
 HECO IGP Workbook 3 → underlying demand + managed EV and e-bus load → DER, efficiency, storage, and TOU adjustments → gross and net 8,760.
 
-**Fleet**  
+**Fleet**<br>
 EIA-860 unit status and summer capacity → utility/contracted Oʻahu resources → combined-cycle components aggregated physically.
 
 </div>
 <div>
 
-**Economics**  
+**Economics**<br>
 EIA-923 implied heat rates × HECO 2024 fuel-price forecast + technology VOM proxy.
 
-**Environmental layer**  
+**Environmental layer**<br>
 HECO fuel CO₂ factors × heat rate; eGRID HIOA output rate used only as the H-POWER proxy.
 
 <p class="small"><span class="assumption">Assumption boundary:</span> current public workbooks do not expose unit-level minimum-output and hourly ramp values. Technology defaults are explicit in every fleet row.</p>

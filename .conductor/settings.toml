@@ -13,4 +13,3 @@ command = "bash scripts/render_slides.sh && python3 -m http.server $CONDUCTOR_PO
 available_in = [ "local" ]
 default = true
 icon = "presentation"
-

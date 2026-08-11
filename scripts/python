@@ -6,4 +6,3 @@ if [[ -x /opt/anaconda3/bin/python ]]; then
 fi
 
 exec python3 "$@"
-
