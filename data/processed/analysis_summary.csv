@@ -9,3 +9,11 @@ peak_day_emissions_tonnes_co2,16108.465
 marginal_generator,Waiau W8
 strongest_duck_curve_day_of_year,261
 fleet_summer_capacity_mw,1508.1
+network_congestion_cost_usd_per_hr,5838.55
+network_loopflow_cost_usd_per_hr,7938.31
+network_dcopf_peak_hour_cost_usd,131689.72
+network_dcopf_peak_day_cost_usd,2.19268383e6
+network_binding_branch_peak,Kahe→Waianae
+network_highest_lmp_bus,Waianae
+network_lmp_span_usd_per_mwh,126.4–455.7
+network_peak_unserved_mwh,0.0

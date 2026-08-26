@@ -6,4 +6,5 @@ cd "$REPO_ROOT"
 
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 bash scripts/python scripts/validate_data.py
+julia --project=. test/opf_reference_test.jl
 bash scripts/render_slides.sh
