@@ -32,6 +32,24 @@ npm run preview    # serve the build locally
 
 `npm run typecheck` runs the TypeScript compiler without emitting.
 
+## Open it with no tooling
+
+`viz/standalone/index.html` is a single self-contained file — all JavaScript, styles, and data
+inlined — that opens in any browser by **double-clicking it**, with no server and no install.
+Share it as one attachment, or drop it onto any static host. Regenerate it after re-solving the
+model with:
+
+```bash
+npm run build:standalone   # writes viz/standalone/index.html
+```
+
+## Hosted link
+
+`.github/workflows/deploy-pages.yml` publishes the app to GitHub Pages on every push that touches
+`viz/`. It activates once Pages is enabled for the repository (Settings → Pages → Source: GitHub
+Actions). GitHub Pages serves a public site for public repositories on any plan; a private
+repository needs a paid plan to publish Pages.
+
 ## Data
 
 The app reads a single bundle, `src/network.json`, generated from the model outputs by:
