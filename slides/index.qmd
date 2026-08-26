@@ -36,7 +36,7 @@ The modeled fleet must satisfy every hour with resources located on the island�
 
 <div class="metric"><span class="value">1,508 MW</span><span class="label">modeled firm summer capacity</span></div>
 <div class="metric"><span class="value">454 MW</span><span class="label">capacity above the modeled peak</span></div>
-<div class="metric"><span class="value">0 MW</span><span class="label">inter-island transfer in this formulation</span></div>
+<div class="metric"><span class="value">9 buses</span><span class="label">two-corridor network model added</span></div>
 
 </div>
 </div>
@@ -259,6 +259,119 @@ The gap combines distributed PV, customer batteries, efficiency, and time-of-use
 [Sources] Hawaiian Electric Final Oʻahu Inputs Workbook 1; EIA-923 2024; EPA eGRID2023 Summary Tables revision 2.
 :::
 
+## Where power is made is not where it is used
+
+<div class="two-col wide-left">
+<div class="figure">
+
+![](../figures/oahu_network_map.png){fig-alt="Stylized 9-bus Oahu network with generation on the leeward side and Honolulu as the largest load"}
+
+</div>
+<div>
+
+Every modeled plant sits on the leeward or central side of the island. Urban Honolulu carries **40% of load** and generates **nothing**.
+
+The copper-plate model hides this by summing the island into one node. A network model puts generation, load, and the two corridors that connect them back on the map.
+
+<p class="small">Nine buses (seven judicial districts, with the generation-heavy Ewa district split), ten 138 kV branches, two independent loops. Orange nodes generate; blue nodes are net sinks. The red line is congested at peak.</p>
+
+</div>
+</div>
+
+<div class="source">Buses and loads: 2020 Census districts. Plant locations: EIA-860. Topology: Hawaiian Electric's two-corridor description. Line parameters are labeled assumptions.</div>
+
+::: {.notes}
+[Sources] U.S. Census 2020 via TIGERweb; EIA-860 2024 plant coordinates; Hawaiian Electric Power Delivery. Full network provenance in SOURCES.md.
+:::
+
+## One constraint separates a grid from a pipeline
+
+<div class="two-col">
+<div>
+
+**Transportation model** — flow is a routing choice. Send power the cheap way, subject only to line limits:
+
+$$\sum_{g\in\mathcal{G}_n}\! y_g + \!\!\sum_{\ell\to n}\! f_\ell - \!\!\sum_{\ell\,\text{from}\,n}\! f_\ell + r_n = d_n$$
+
+$$-\bar F_\ell \le f_\ell \le \bar F_\ell$$
+
+**DC-OPF** adds one line — Kirchhoff's voltage law:
+
+<div class="keyline">$$f_\ell = S_{base}\,B_\ell\,(\theta_{\text{fr}(\ell)}-\theta_{\text{to}(\ell)})$$</div>
+
+</div>
+<div>
+
+With that constraint, flow is **no longer chosen**. Fix the injections and the reactances pin down every line flow. On a mesh, power splits across parallel paths in inverse proportion to reactance—convenient or not.
+
+```julia
+@constraint(model, kvl[l in L, t in T],
+  f[l,t] == BASE_MVA * B[l] *
+    (θ[from[l],t] - θ[to[l],t]))
+```
+
+<p class="small">Same three feasible sets, nested: copper plate ⊇ transportation ⊇ DC-OPF. Each restriction can only raise cost.</p>
+
+</div>
+</div>
+
+<div class="source">Full formulation, assumptions, and PTDF equivalent in docs/DC_OPF_FORMULATION.md; implementation in src/NetworkDispatch.jl.</div>
+
+::: {.notes}
+[Sources] Standard DC-OPF derivation from the AC branch-flow equations; repository model code.
+:::
+
+## The network costs show up as congestion, then physics
+
+<div class="two-col wide-left">
+<div class="figure">
+
+![](../figures/oahu_lmp_by_bus.png){fig-alt="Locational marginal price by bus, from Kahe at 126 to Waianae at 456 dollars per MWh"}
+
+</div>
+<div>
+
+<div class="metric"><span class="value">+$5,839/h</span><span class="label">congestion (transport − copper)</span></div>
+<div class="metric"><span class="value">+$7,938/h</span><span class="label">loop flow (DC-OPF − transport)</span></div>
+
+The single price of the copper plate—**$134/MWh**—splits into a range from **$126** at Kahe to **$456** at Waiʻanae, stranded behind the one congested line.
+
+<p class="small">The binding constraint is Kahe→Waiʻanae: the island's cheapest, largest plant can push only 200 MW up the north corridor. Intuition expected the Honolulu import to bind first—the model found otherwise.</p>
+
+</div>
+</div>
+
+<div class="source">Peak-hour result, 1,054 MW island net load. Values in data/processed/network_cost_comparison.csv and network_lmps.csv.</div>
+
+::: {.notes}
+[Sources] Repository outputs; predicted-versus-actual discussion in docs/DC_OPF_FORMULATION.md §8.
+:::
+
+## Why the transportation model is not enough
+
+<div class="two-col">
+<div class="figure">
+
+![](../figures/congestion_sensitivity.png){fig-alt="Congestion and loop-flow cost rising as the north-corridor rating tightens, with a load-shedding onset"}
+
+</div>
+<div>
+
+A transportation model routes power along the cheapest feasible path. The real grid cannot—flow follows reactance, not price.
+
+As the north corridor tightens, both costs climb. Below **~180 MW**, DC-OPF physically **cannot serve** the north side and sheds load; the transportation model hides that failure by rerouting power the physics forbids.
+
+<div class="keyline">The gap between the two models is the cost of the laws of physics. On a meshed grid it is not optional.</div>
+
+</div>
+</div>
+
+<div class="source">Sweep of the Kahe→Waiʻanae rating at peak load; data/processed/network_congestion_sweep.csv.</div>
+
+::: {.notes}
+[Sources] Repository sensitivity output; the shedding safety valve is described in docs/DC_OPF_FORMULATION.md §3.
+:::
+
 ## The result is a transparent baseline—not an operating forecast
 
 <div class="two-col">
@@ -268,18 +381,18 @@ The gap combines distributed PV, customer batteries, efficiency, and time-of-use
 
 - A reproducible 8,760-hour Oʻahu load dataset
 - A traceable 2024 dispatchable-fleet table
-- Feasible single- and multi-period economic dispatch
-- Cost, ramping, duck-curve, and emissions views from the same inputs
+- Feasible single-, multi-period, and networked dispatch
+- Cost, ramping, duck-curve, emissions, and locational-price views from the same inputs
 
 </div>
 <div>
 
 **What should come next**
 
-- Replace assumed unit constraints with confidential or newly filed values
+- Replace assumed unit and line parameters with confidential or newly filed values
+- Cross-check the stylized network against the Texas A&M Hawaii40 synthetic case
 - Add binary commitment, start costs, minimum up/down time, reserves, and outages
 - Co-optimize Kapolei Energy Storage instead of embedding storage in net load
-- Test transition scenarios, including historical AES operation, as separate vintages
 
 </div>
 </div>

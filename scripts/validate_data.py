@@ -51,9 +51,48 @@ def main() -> None:
         "minimum output exceeds load in the modeled 24-hour peak window"
     )
     assert np.isfinite(generators.varcost_usd_per_mwh).all(), "non-finite variable cost"
+
+    validate_network(generators)
+
     print(
         "Validated 8,760 load hours and "
         f"{len(generators)} resources ({generators.p_max_mw.sum():.1f} MW)."
+    )
+
+
+def validate_network(generators: pd.DataFrame) -> None:
+    buses = pd.read_csv(PROCESSED / "oahu_network_buses.csv")
+    branches = pd.read_csv(PROCESSED / "oahu_network_branches.csv")
+    generator_bus = pd.read_csv(PROCESSED / "oahu_generator_bus_map.csv")
+
+    bus_names = set(buses.bus)
+    assert buses.bus.is_unique, "bus names must be unique"
+    assert np.isclose(buses.load_share.sum(), 1.0), "bus load shares must sum to one"
+    assert (buses.load_share >= 0).all(), "negative load share"
+    assert (buses.latitude.between(21.2, 21.8)).all(), "a bus is outside Oʻahu's latitude band"
+    assert (buses.longitude.between(-158.4, -157.6)).all(), "a bus is outside Oʻahu's longitude band"
+
+    assert branches.branch.is_unique, "branch ids must be unique"
+    assert set(branches.from_bus) <= bus_names, "a branch starts at an unknown bus"
+    assert set(branches.to_bus) <= bus_names, "a branch ends at an unknown bus"
+    assert (branches.x_pu > 0).all(), "non-positive branch reactance"
+    assert (branches.limit_mw > 0).all(), "non-positive branch thermal limit"
+    assert (branches.transport_cost_usd_per_mwh >= 0).all(), "negative transport cost"
+
+    # DC-OPF only differs from the transportation model on a meshed network, so the loop
+    # count is a hard requirement, not a nicety.
+    connected = set(branches.from_bus) | set(branches.to_bus)
+    assert connected == bus_names, "some bus is disconnected from every branch"
+    loops = len(branches) - len(buses) + 1
+    assert loops >= 1, "network is radial; DC-OPF would collapse to the transportation model"
+
+    assert set(generator_bus.name) == set(generators.name), "generator/bus map is out of sync with the fleet"
+    assert set(generator_bus.bus) <= bus_names, "a generator is mapped to an unknown bus"
+    assert (generator_bus.p_max_mw.sum() - generators.p_max_mw.sum()) < 1e-6, "fleet capacity drifted in the bus map"
+
+    print(
+        f"Validated {len(buses)}-bus network with {len(branches)} branches "
+        f"({loops} independent loops)."
     )
 
 

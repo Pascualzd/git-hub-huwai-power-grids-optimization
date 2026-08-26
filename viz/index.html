@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oʻahu Network Explorer — DC-OPF</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="topbar">
+        <div class="titles">
+          <h1>Oʻahu network explorer</h1>
+          <p class="subtitle">Peak-hour DC optimal power flow · scroll to zoom, drag to pan, click a bus for detail</p>
+        </div>
+        <div class="controls">
+          <label for="metric">Color &amp; size buses by</label>
+          <select id="metric"></select>
+          <button id="fit" type="button">Reset view</button>
+        </div>
+      </header>
+
+      <main>
+        <div id="cy"></div>
+
+        <aside id="panel">
+          <div id="panel-empty" class="panel-hint">
+            <p>Click any <strong>bus</strong> to see its load, price, and the power plants located there — with each plant's minimum, maximum, cost, ramp rate, and emissions.</p>
+            <p>Click any <strong>line</strong> to see its flow, limit, and loading.</p>
+          </div>
+          <div id="panel-content" hidden></div>
+        </aside>
+      </main>
+
+      <div id="legend"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
