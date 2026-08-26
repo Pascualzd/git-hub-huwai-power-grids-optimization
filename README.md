@@ -50,6 +50,7 @@ transformations, and limitations are recorded in [SOURCES.md](SOURCES.md).
 - `src/run_analysis.jl` — scenario runner and all generated figures
 - `slides/` — Quarto revealjs source and rendered deck
 - `figures/` — code-generated analysis graphics
+- `viz/` — interactive, zoomable TypeScript/Cytoscape.js network explorer (see `viz/README.md`)
 - `docs/DC_OPF_FORMULATION.md` — the network optimization problem stated mathematically
 - `test/opf_reference_test.jl` — reproduces the course manual's 3-bus example to validate the solver
 - `DATA_SOURCES.md` — source-to-parameter map

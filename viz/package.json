@@ -1,0 +1,20 @@
+{
+  "name": "oahu-network-explorer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Interactive, zoomable explorer for the Oʻahu DC-OPF network model",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cytoscape": "^3.30.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
