@@ -1,0 +1,52 @@
+# Builds the interactive network explorer in viz/ and publishes it to GitHub Pages.
+#
+# This runs only after Pages is enabled for the repository with "GitHub Actions" as the source
+# (Settings → Pages). The committed viz/src/network.json means the build needs only Node — no
+# Julia or Python — so it is fast and self-contained.
+name: Deploy network explorer to Pages
+
+on:
+  push:
+    branches: [master, hawaii-power-grid-info]
+    paths:
+      - "viz/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: viz
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: viz/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: viz/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
