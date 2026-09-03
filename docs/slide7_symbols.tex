@@ -1,0 +1,237 @@
+% ---------------------------------------------------------------------------
+% Slide 7 symbol glossary — ramp-constrained multi-period dispatch
+% Companion to the seminar deck and to docs/DYNAMIC_DISPATCH_FORMULATION.md
+% Build:  pdflatex slide7_symbols.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[colorlinks=true,linkcolor=cool,urlcolor=cool]{hyperref}
+
+\definecolor{accent}{HTML}{A96A05}   % ramp / everything the dynamic model adds
+\definecolor{cool}{HTML}{215E7C}     % structure carried over from the static model
+\definecolor{rule}{HTML}{BFBFBF}
+\definecolor{dim}{HTML}{5A5A5A}
+
+\titleformat{\section}{\large\bfseries\color{cool}}{\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.6em}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titlespacing*{\subsection}{0pt}{1.1em}{0.4em}
+
+\newcommand{\sym}[1]{$#1$}
+\newcommand{\new}[1]{\textcolor{accent}{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.28}
+
+\pagestyle{plain}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries What every symbol on slide 7 means}\\[0.45em]
+  {\color{dim}Ramp-constrained multi-period economic dispatch \;\textbullet\;
+   companion sheet to the seminar deck}
+\end{center}
+\vspace{0.6em}
+\noindent\textcolor{rule}{\hrule height 0.6pt}
+\vspace{1.2em}
+
+% ---------------------------------------------------------------------------
+\section{The program, for reference}
+
+\begin{align*}
+  \min_{p,\,f,\,s}\quad
+  &\underbrace{\sum_{t\in\mathcal{T}}\sum_{g\in\mathcal{G}} c_g\, p_{g,t}\,\Delta t}_{\text{fuel bill}}
+   \;+\;
+   \underbrace{\sum_{t\in\mathcal{T}}\sum_{i\in\mathcal{N}} \mathrm{VOLL}\cdot s_{i,t}\,\Delta t}_{\text{penalty for unserved load}}
+\end{align*}
+
+\vspace{-0.8em}
+\noindent subject to
+\begin{align}
+  \sum_{g\in\mathcal{G}_i} p_{g,t} \;-\; \bigl(D_{i,t}-s_{i,t}\bigr)
+    &= \sum_{\ell\,:\,\mathrm{fr}(\ell)=i} f_{\ell,t} \;-\; \sum_{\ell\,:\,\mathrm{to}(\ell)=i} f_{\ell,t}
+    &&\forall\, i\in\mathcal{N},\ \forall\, t\in\mathcal{T} \tag{C1}\\[0.2em]
+  \underline{P}_g &\le p_{g,t} \le \overline{P}_g
+    &&\forall\, g\in\mathcal{G},\ \forall\, t\in\mathcal{T} \tag{C2}\\[0.2em]
+  -\overline{F}_\ell &\le f_{\ell,t} \le \overline{F}_\ell
+    &&\forall\, \ell\in\mathcal{L},\ \forall\, t\in\mathcal{T} \tag{C3}\\[0.2em]
+  \new{p_{g,t} - p_{g,t-1}} &\;\new{\le\; \mathrm{RU}_g}
+    &&\new{\forall\, g\in\mathcal{G},\ t = 2,\dots,T} \tag{C4}\\[0.2em]
+  \new{p_{g,t-1} - p_{g,t}} &\;\new{\le\; \mathrm{RD}_g}
+    &&\new{\forall\, g\in\mathcal{G},\ t = 2,\dots,T} \tag{C5}\\[0.2em]
+  \new{p_{g,1} - P^{0}_{g} \le \mathrm{RU}_g,\quad}
+  &\new{P^{0}_{g} - p_{g,1} \le \mathrm{RD}_g}
+    &&\new{\forall\, g\in\mathcal{G}} \tag{C6}\\[0.2em]
+  p_{g,t} &\ge 0,\qquad 0 \le s_{i,t} \le D_{i,t}
+    && \tag{C7}
+\end{align}
+
+\noindent
+\textcolor{accent}{\textbf{C4, C5 and C6 are the only lines that are new.}} Everything else is
+the single-period transport model with a $t$ added to every subscript.
+
+% ---------------------------------------------------------------------------
+\section{Sets and indices --- the filing cabinet}
+
+\begin{center}
+\begin{tabular}{@{}c L{2.9cm} L{8.3cm} L{2.4cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Name} & \textbf{What it counts} & \textbf{In our case} \\
+\midrule
+$i, j \in \mathcal{N}$ & buses (nodes) & Junction boxes --- where wires meet and load hangs & $|\mathcal{N}| = 3$ \\
+$g \in \mathcal{G}$ & generators & The taps you can open and close & $|\mathcal{G}| = 2$ \\
+$\mathcal{G}_i \subseteq \mathcal{G}$ & generators at bus $i$ & Which taps are bolted to \emph{this} junction box & $\mathcal{G}_1=\{1\}$, $\mathcal{G}_2=\{2\}$ \\
+$\ell \in \mathcal{L}$ & lines (branches) & The pipes between junction boxes & $|\mathcal{L}| = 3$ \\
+$t \in \mathcal{T}$ & time periods & Frames of the filmstrip, $\mathcal{T}=\{1,\dots,T\}$ & $T = 24$ \\
+$\mathrm{fr}(\ell)$ & from-bus of $\ell$ & The end the pipe's arrow is painted \emph{from} & --- \\
+$\mathrm{to}(\ell)$ & to-bus of $\ell$ & The end it points \emph{to} & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{On $\mathrm{fr}$ and $\mathrm{to}$.} These are a \emph{sign convention}, not a
+claim about direction. They say which way we agree to call positive. If the solver returns
+$f_{\ell,t} < 0$, the power is genuinely flowing the other way, and that is a legitimate answer.
+(The formulation writes $\mathrm{fr}(\ell)$ and $\mathrm{to}(\ell)$ rather than $f(\ell)$ and
+$t(\ell)$ precisely so the to-bus never collides with the time index $t$.)
+
+% ---------------------------------------------------------------------------
+\section{Parameters --- the numbers stamped on the equipment}
+
+These are \textbf{given}. The optimiser reads them and cannot change them.
+
+\begin{center}
+\begin{tabular}{@{}c L{2.9cm} c L{6.4cm} L{3.0cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Name} & \textbf{Units} & \textbf{Physically} & \textbf{In our case} \\
+\midrule
+$c_g$ & marginal cost & \$/MWh & The price tag on the fuel feeding tap $g$
+  & G1: 10 \quad G2: 30 \\
+$\overline{P}_g$ & maximum output & MW & How far open the tap physically goes
+  & both: 250 \\
+$\underline{P}_g$ & minimum output & MW & How far \emph{closed} it goes while still running
+  & both: 0 \\
+\new{$\mathrm{RU}_g$} & \new{ramp-up limit} & \new{MW/h} & \new{How many turns of the hand-wheel you may make \emph{upward} in one period}
+  & \new{G1: 30 \quad G2: 250} \\
+\new{$\mathrm{RD}_g$} & \new{ramp-down limit} & \new{MW/h} & \new{The same wheel, turning downward}
+  & \new{G1: 30 \quad G2: 250} \\
+\new{$P^{0}_{g}$} & \new{initial output} & \new{MW} & \new{Where the tap was set the hour \emph{before} the horizon starts}
+  & \new{G1: 100 \quad G2: 50} \\
+$\overline{F}_\ell$ & thermal rating & MW & The burst rating of pipe $\ell$
+  & 1--2: 250 \quad 1--3: 150 \quad 2--3: 250 \\
+$D_{i,t}$ & demand & MW & How much is drained out of bus $i$ during hour $t$
+  & peak 364.0 at $t{=}18$ \\
+$\Delta t$ & period length & h & How long one frame lasts
+  & 1 \\
+$\mathrm{VOLL}$ & value of lost load & \$/MWh & The fine for failing to deliver
+  & 5{,}000 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Why $\mathrm{VOLL}$ is enormous.} At \$5{,}000/MWh, shedding load is never
+economic --- the solver will burn the most expensive generator in the fleet first. It is a
+\emph{safety valve}, not a choice: it converts an unhelpful \texttt{INFEASIBLE} into an answer
+that tells you exactly \emph{where} and \emph{when} the system broke.
+
+% ---------------------------------------------------------------------------
+\section{Decision variables --- the knobs the optimiser may turn}
+
+\begin{center}
+\begin{tabular}{@{}c L{3.2cm} c L{8.2cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Name} & \textbf{Range} & \textbf{What you are physically setting} \\
+\midrule
+$p_{g,t}$ & generation & $\ge 0$ & How far open tap $g$ is during hour $t$ \\
+$f_{\ell,t}$ & line flow & free sign & How much power moves through pipe $\ell$; positive means from $\mathrm{fr}(\ell)$ toward $\mathrm{to}(\ell)$ \\
+$s_{i,t}$ & load shed & $0 \le s_{i,t} \le D_{i,t}$ & Load at bus $i$ deliberately \emph{not} served in hour $t$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Together these form a table with $|\mathcal{G}|$ rows and $T$ columns for $p$ (here $2\times 24
+= 48$ numbers), plus $|\mathcal{L}|\times T$ flows and $|\mathcal{N}|\times T$ shed variables.
+The static model solved a single column of that table.
+
+% ---------------------------------------------------------------------------
+\section{Notation conventions}
+
+\begin{center}
+\begin{tabular}{@{}c L{12.6cm}@{}}
+\toprule
+\textbf{Mark} & \textbf{Reads as} \\
+\midrule
+$\overline{x}$ & An \emph{upper} bound on $x$ --- a ceiling ($\overline{P}_g$, $\overline{F}_\ell$) \\
+$\underline{x}$ & A \emph{lower} bound on $x$ --- a floor ($\underline{P}_g$) \\
+$x^{0}$ & The value of $x$ \emph{before} the horizon begins ($P^{0}_{g}$) \\
+$x_{g,t}$ & Two indices: the first says \emph{which machine}, the second \emph{which hour} \\
+$\sum_{g\in\mathcal{G}_i}$ & Add up over every generator sitting at bus $i$ \\
+$\sum_{\ell\,:\,\mathrm{fr}(\ell)=i}$ & Add up over every line whose from-end is bus $i$ \\
+$\forall$ & ``for all'' --- this line is not one constraint but one \emph{per} listed combination \\
+$\in$ & ``is a member of'' \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{The $\forall$ multiplies the work.} C1 is not a single equation: written
+$\forall i \in \mathcal{N}, \forall t \in \mathcal{T}$ it stands for $3 \times 24 = 72$ separate
+equations. C4 and C5 together stand for $2\,|\mathcal{G}|\,(T-1) = 92$.
+
+% ---------------------------------------------------------------------------
+\section{Reading each line aloud}
+
+\begin{center}
+\begin{tabular}{@{}c L{12.6cm}@{}}
+\toprule
+& \textbf{In words} \\
+\midrule
+\textbf{obj} & Minimise the fuel burnt across the whole horizon, plus a large penalty for any
+  load left unserved. \\
+\textbf{C1} & At every bus, in every hour: what the generators there inject, minus what the
+  load there actually takes, equals the net power leaving on the wires. Kirchhoff's current law. \\
+\textbf{C2} & No generator runs above its maximum or below its minimum, in any hour. \\
+\textbf{C3} & No line carries more than its rating, in either direction, in any hour. \\
+\new{\textbf{C4}} & \new{From one hour to the next, a generator may rise by at most
+  $\mathrm{RU}_g$ megawatts.} \\
+\new{\textbf{C5}} & \new{And it may fall by at most $\mathrm{RD}_g$ megawatts.} \\
+\new{\textbf{C6}} & \new{The first hour is measured against where the machine already was at
+  midnight --- the horizon does not start from a blank screen.} \\
+\textbf{C7} & Generators do not consume power, and you cannot shed load that was never there. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ---------------------------------------------------------------------------
+\section{The one structural point}
+
+C1, C2, C3 and C7 all carry the index $t$, but each of them acts \emph{within} a single hour:
+delete C4--C6 and the problem separates into $T$ independent single-period problems that could
+be solved one at a time and stapled together.
+
+C4 and C5 are the only constraints that mention \emph{two different values of $t$ at once}.
+That is what welds the hours into a single program, and it is the entire source of every
+interesting behaviour in the model --- the anticipative dispatch, the prices that leave the
+range $[\min_g c_g,\ \max_g c_g]$, and the fact that a fleet with ample capacity can still fail
+because demand rose too \emph{steeply}.
+
+\vspace{1.4em}
+\noindent\textcolor{rule}{\hrule height 0.6pt}
+\vspace{0.5em}
+\noindent{\small\color{dim}
+Full derivation and the DC-OPF extension (C8, C9):
+\texttt{docs/DYNAMIC\_DISPATCH\_FORMULATION.md}. \;
+Implementation: \texttt{OPT simple case/OPT part 4 - dynamic ramping.jl}.
+Parameter values above are those actually used in that script.}
+
+\end{document}
