@@ -42,7 +42,7 @@ const C_GEN     = RGB(0.42, 0.87, 0.55)
 const C_LOAD    = RGB(0.98, 0.45, 0.42)
 const C_JUNC    = RGB(0.55, 0.58, 0.65)
 const C_TEXT    = RGB(0.85, 0.86, 0.88)
-const C_DIM     = RGB(0.50, 0.52, 0.58)
+const C_DIM     = RGB(0.65, 0.67, 0.72)
 
 """
     save_gif(anim, path; fps, dither)
@@ -249,7 +249,7 @@ function grid_frame(bus, branch, generation, flows, angles, coords;
         scatter!(p, [x], [y]; ms = ms, color = col, alpha = 1.0,
                  shape = i == slack ? :rect : :circle,
                  markerstrokecolor = BG, markerstrokewidth = 1.5)
-        annotate!(p, x, y, text(string(i), 9, RGB(0.06,0.07,0.08), :center, :bold))
+        annotate!(p, x, y, text(string(i), 10, RGB(0.06,0.07,0.08), :center, :bold))
     end
 
     # ---- the readout, in its own band of sky -----------------------------
@@ -261,15 +261,15 @@ function grid_frame(bus, branch, generation, flows, angles, coords;
         # at the right edge; measuring instead of guessing avoids that.
         avail = 0.93 * size[1]                      # px of usable width
         fs = 12
-        while fs > 7 && length(title) * 0.60 * fs > avail
+        while fs > 9 && length(title) * 0.60 * fs > avail
             fs -= 1
         end
         annotate!(p, tx, ty, text(title, fs, C_TEXT, :left, :bold))
         ty -= 0.062 * span
     end
     for (lab, val) in hud
-        annotate!(p, tx, ty, text(lab, 9, C_DIM, :left))
-        annotate!(p, tx + 0.26 * (xlim[2] - xlim[1]), ty, text(val, 10, C_TEXT, :left, :bold))
+        annotate!(p, tx, ty, text(lab, 11, C_DIM, :left))
+        annotate!(p, tx + 0.26 * (xlim[2] - xlim[1]), ty, text(val, 12, C_TEXT, :left, :bold))
         ty -= 0.055 * span
     end
     return p

@@ -253,9 +253,9 @@ function plot_network(bus, branch, generation, flows;
                            str = (lim >= unlimited || lim <= 0) ?
                                  @sprintf("%.0f", abs(f)) :
                                  @sprintf("%.0f/%.0f", abs(f), lim),
-                           sz = 7,
-                           col = atlim ? RGB(0.70, 0.10, 0.10) : RGB(0.25, 0.25, 0.25),
-                           bold = atlim))
+                           sz = 9,
+                           col = atlim ? RGB(0.70, 0.10, 0.10) : RGB(0.02, 0.02, 0.05),
+                           bold = true))
         end
     end
 
@@ -285,8 +285,8 @@ function plot_network(bus, branch, generation, flows;
             (olen < 1e-6) && ((ox, oy, olen) = (0.0, -1.0, 1.0))
             r = 0.048 * span + 0.0016 * span * ms
             push!(labels, (x = x + r * ox / olen, y = y + r * oy / olen,
-                           str = join(lbl, "  "), sz = 7,
-                           col = RGB(0.12, 0.12, 0.12), bold = false))
+                           str = join(lbl, "  "), sz = 9,
+                           col = RGB(0.05, 0.05, 0.07), bold = true))
         end
     end
 
@@ -325,7 +325,7 @@ function plot_network(bus, branch, generation, flows;
     end
     for (k, l) in enumerate(labels)
         annotate!(p, lx[k], ly[k],
-                  text(l.str, l.sz, l.col, :center, l.bold ? :bold : :normal))
+                  text(l.str, l.sz, l.col, :center, :bold))
     end
 
     # ---- 3. a legend you can actually read ------------------------------
@@ -365,7 +365,7 @@ function plot_dispatch(gen, gencost, generation; title = "Dispatch vs capacity")
          color = RGB(0.17, 0.40, 0.62), linecolor = :white)
     for (i, u) in enumerate(used)
         annotate!(p, i, u + 0.05 * maximum(cap),
-                  text(@sprintf("%.0f MW\n\$%.0f/MWh", u, cost[i]), 7, :center))
+                  text(@sprintf("%.0f MW\n\$%.0f/MWh", u, cost[i]), 9, RGB(0.05, 0.05, 0.07), :center, :bold))
     end
     return p
 end

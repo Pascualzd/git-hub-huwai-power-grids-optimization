@@ -26,7 +26,7 @@
         :root {
             --anthropic-dark: #141413;
             --anthropic-light: #faf9f5;
-            --anthropic-mid-gray: #b0aea5;
+            --anthropic-mid-gray: #65625b;
             --anthropic-light-gray: #e8e6dc;
             --anthropic-orange: #d97757;
             --anthropic-blue: #6a9bcc;
@@ -191,7 +191,7 @@
         }
 
         .note {
-            font-size: 11px; line-height: 1.5; color: var(--anthropic-mid-gray);
+            font-size: 13px; line-height: 1.5; color: var(--anthropic-mid-gray);
             border-left: 2px solid var(--anthropic-light-gray);
             padding-left: 10px; margin-top: -8px; margin-bottom: 20px;
         }
@@ -669,7 +669,7 @@
         textStyle(NORMAL);
         textAlign(LEFT, CENTER);
 
-        fill(216, 219, 224); textSize(20); textStyle(BOLD);
+        fill(235, 237, 242); textSize(20); textStyle(BOLD);
         text(pack.name.toUpperCase() + '   ·   CONSTRAINED DESCENT', 40, 42);
 
         const rows = [
@@ -685,9 +685,9 @@
             const col = i % 3;
             const x = 40 + col * 320;
             if (col === 0 && i > 0) y += 32;
-            textStyle(NORMAL); textSize(12); fill(128, 133, 145);
+            textStyle(NORMAL); textSize(13); fill(165, 170, 182);
             text(k, x, y);
-            textStyle(BOLD); textSize(14); fill(224, 227, 232);
+            textStyle(BOLD); textSize(14); fill(235, 237, 242);
             text(v, x + 118, y);
         });
     }
