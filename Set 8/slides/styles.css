@@ -1,0 +1,106 @@
+/* Set 8 deck -- inherits the house style from slides/styles.css, plus a few
+   classes this deck needs for probability call-outs and comparison tables. */
+
+:root {
+  --ink: #17324d;
+  --muted: #5c7083;
+  --ocean: #0b7285;
+  --sun: #ef8354;
+  --sand: #f6f2e8;
+  --rule: #d5dee5;
+  --danger: #c0392b;
+  --calm: #2a78d6;
+}
+
+.reveal {
+  color: var(--ink);
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", sans-serif;
+  font-size: 30px;
+}
+
+.reveal .slides { text-align: left; }
+.reveal h1, .reveal h2, .reveal h3 {
+  color: var(--ink);
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-transform: none;
+}
+.reveal h1 { font-size: 2.45em; line-height: 1.02; }
+.reveal h2 { font-size: 1.55em; line-height: 1.08; margin-bottom: .55em; }
+.reveal h3 { font-size: 1.05em; }
+.reveal p, .reveal li { line-height: 1.32; }
+.reveal strong { color: var(--ocean); }
+.reveal img { max-height: 640px; object-fit: contain; }
+.reveal code { color: #8b3f26; }
+.reveal pre code { font-size: .70em; line-height: 1.22; }
+.reveal blockquote {
+  border-left: 8px solid var(--sun);
+  box-shadow: none;
+  color: var(--ink);
+  font-style: normal;
+  margin: 1.2em 0;
+  padding: .25em 0 .25em .8em;
+  width: 88%;
+}
+.reveal .slide-number { color: var(--muted); font-size: 17px; }
+
+.title-slide {
+  background: linear-gradient(120deg, #f7f4ea 0%, #eef6f6 58%, #dcecf0 100%);
+}
+.title-slide h1 { max-width: 14ch; margin-top: 1.05em; }
+.kicker { color: var(--sun); font-size: .72em; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.subtitle { color: var(--muted); font-size: 1.12em; max-width: 32em; }
+
+.metric-row { display: flex; gap: 2.2em; align-items: flex-start; margin-top: 1.2em; }
+.metric { border-top: 6px solid var(--sun); padding-top: .35em; min-width: 7.2em; }
+.metric .value { color: var(--ink); display: block; font-size: 1.85em; font-weight: 750; letter-spacing: -.04em; }
+.metric .label { color: var(--muted); display: block; font-size: .6em; line-height: 1.2; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4em; align-items: center; }
+.two-col.wide-left { grid-template-columns: 1.12fr .88fr; }
+.two-col.wide-right { grid-template-columns: .82fr 1.18fr; }
+.figure img { margin: 0; width: 100%; }
+.figure p { margin: 0; }
+.small { color: var(--muted); font-size: .63em; line-height: 1.28; }
+.source { border-top: 1px solid var(--rule); color: var(--muted); font-size: .46em; margin-top: .55em; padding-top: .35em; }
+.keyline { border-left: 8px solid var(--sun); font-size: 1.06em; margin-top: .85em; padding-left: .75em; }
+.equation { color: var(--ink); font-size: 1.05em; margin: .9em 0; }
+.assumption { color: #9a4b2f; font-weight: 700; }
+.reveal .progress { color: var(--sun); }
+
+/* --- Set 8 additions ---------------------------------------------------- */
+
+/* A big probability, stated as the answer to one question. */
+.answer-row { display: flex; gap: 1.6em; margin-top: .9em; }
+.answer {
+  border-top: 6px solid var(--ocean);
+  padding-top: .4em;
+  flex: 1;
+}
+.answer.danger { border-top-color: var(--danger); }
+.answer.warn   { border-top-color: var(--sun); }
+.answer .q { color: var(--muted); display: block; font-size: .55em; line-height: 1.25; min-height: 3.2em; }
+.answer .p { color: var(--ink); display: block; font-size: 1.9em; font-weight: 750; letter-spacing: -.04em; }
+.answer .ci { color: var(--muted); display: block; font-size: .45em; }
+
+/* Assumption vs reality, side by side. */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; margin-top: .8em; }
+.vs .card { border-radius: 10px; padding: .7em .9em; }
+.vs .assumed { background: #fdf0e9; border-left: 7px solid var(--sun); }
+.vs .real    { background: #e9f2fd; border-left: 7px solid var(--calm); }
+.vs h3 { font-size: .78em; margin: 0 0 .35em 0; }
+.vs .num { display: block; font-size: 1.45em; font-weight: 750; letter-spacing: -.03em; }
+.vs .cap { color: var(--muted); display: block; font-size: .52em; line-height: 1.25; }
+
+.cmp-table { font-size: .62em; width: 100%; border-collapse: collapse; }
+.cmp-table th { color: var(--ocean); text-align: right; border-bottom: 2px solid var(--rule); }
+.cmp-table th:first-child, .cmp-table td:first-child { text-align: left; }
+.cmp-table td, .cmp-table th { padding: .3em .55em !important; }
+.cmp-table tr.hi { background: #eef6f6; font-weight: 700; }
+.cmp-table td { text-align: right; border-bottom: 1px solid var(--rule); }
+
+.pill {
+  background: var(--sand); border-radius: 999px; color: var(--muted);
+  font-size: .5em; padding: .18em .8em; display: inline-block; margin-right: .4em;
+}

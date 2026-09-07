@@ -41,8 +41,16 @@ const C_HOT     = RGB(0.95, 0.28, 0.22)
 const C_GEN     = RGB(0.42, 0.87, 0.55)
 const C_LOAD    = RGB(0.98, 0.45, 0.42)
 const C_JUNC    = RGB(0.55, 0.58, 0.65)
-const C_TEXT    = RGB(0.85, 0.86, 0.88)
-const C_DIM     = RGB(0.65, 0.67, 0.72)
+const C_TEXT    = RGB(0.92, 0.93, 0.95)
+const C_DIM     = RGB(0.78, 0.80, 0.84)
+const C_FLOW_LBL = RGB(0.95, 0.96, 0.97)
+
+# Average glyph width as a fraction of font size, for GR's default sans face.
+# Measured, not guessed: a 20-character label at 13pt renders 208px wide, and a
+# 57-character title at 14pt renders 663px, giving 0.80 both times. The earlier
+# value of 0.60 under-measured every label, which is how a HUD value column
+# ended up printed on top of the labels it was supposed to sit beside.
+const CHAR_W = 0.80
 
 """
     save_gif(anim, path; fps, dither)
@@ -130,6 +138,7 @@ Keywords
 function grid_frame(bus, branch, generation, flows, angles, coords;
                     phase = 0.0, hud = Tuple{String,String}[], title = "",
                     unlimited = 9000.0, density = 26.0, show_terrain = true,
+                    show_flow_labels = false, bus_labels = nothing,
                     maxflow_ref = nothing, size = nothing,
                     seed = 0, bands = 16, jitter = 0.0,
                     cool = C_COOL, warm = C_WARM, hot = C_HOT, ground = TERRAIN)
@@ -238,6 +247,28 @@ function grid_frame(bus, branch, generation, flows, angles, coords;
                  markerstrokewidth = 0)
     end
 
+    # ---- FLOW LABELS on lines (MW rounded) --------------------------------
+    if show_flow_labels
+        for r in eachrow(flows)
+            f = r.flow
+            abs(f) < 0.5 && continue        # skip near-zero flows
+            a, b = f >= 0 ? (r.fbus, r.tbus) : (r.tbus, r.fbus)
+            x1, y1 = coords[a]; x2, y2 = coords[b]
+            mx = (x1 + x2) / 2; my = (y1 + y2) / 2
+            seglen = sqrt((x2 - x1)^2 + (y2 - y1)^2)
+            # perpendicular offset so the label doesn't sit on the carriers
+            nx = -(y2 - y1) / seglen; ny = (x2 - x1) / seglen
+            off = 0.028 * span
+            lx = mx + nx * off; ly = my + ny * off
+            lbl = @sprintf("%.0f", abs(f))
+            # dark shadow for contrast, then bright label
+            annotate!(p, lx + 0.002 * span, ly - 0.002 * span,
+                      text(lbl, 11, RGB(0.02, 0.02, 0.04), :center))
+            annotate!(p, lx, ly,
+                      text(lbl, 11, C_FLOW_LBL, :center))
+        end
+    end
+
     # ---- the junction boxes ---------------------------------------------
     for i in ids
         x, y = coords[i]
@@ -249,28 +280,53 @@ function grid_frame(bus, branch, generation, flows, angles, coords;
         scatter!(p, [x], [y]; ms = ms, color = col, alpha = 1.0,
                  shape = i == slack ? :rect : :circle,
                  markerstrokecolor = BG, markerstrokewidth = 1.5)
-        annotate!(p, x, y, text(string(i), 10, RGB(0.06,0.07,0.08), :center, :bold))
+        annotate!(p, x, y, text(string(i), 12, RGB(0.06,0.07,0.08), :center))
+        # Optional place name under the marker. On a real geographic layout an
+        # index is not enough -- "Ewa-Central" tells the viewer where they are,
+        # "2" does not.
+        if bus_labels !== nothing && haskey(bus_labels, i)
+            annotate!(p, x, y - 0.042 * span,
+                      text(String(bus_labels[i]), 11, C_DIM, :center))
+        end
     end
 
     # ---- the readout, in its own band of sky -----------------------------
+    #
+    # Converting between pixels and data units needs care here, because the
+    # axes are EQUAL-ASPECT. The x range is therefore NOT stretched across
+    # size[1] pixels: whichever axis is the binding constraint sets a single
+    # scale for both. Using size[1] / x-range overestimates the available
+    # width -- which is exactly how a value column ends up printed on top of
+    # its own label.
+    px_per_unit = min(size[1] / (xlim[2] - xlim[1]),
+                      size[2] / (ylim[2] - ylim[1]))
+    plot_w_px   = (xlim[2] - xlim[1]) * px_per_unit    # true usable width, px
+
     tx = xlim[1] + 0.035 * (xlim[2] - xlim[1])
     ty = ylim[2] - 0.045 * span
     if !isempty(title)
         # Shrink the headline until it fits the canvas. The IEEE 14-bus layout
         # is tall and narrow, so a title tuned on a wide canvas gets guillotined
         # at the right edge; measuring instead of guessing avoids that.
-        avail = 0.93 * size[1]                      # px of usable width
-        fs = 12
-        while fs > 9 && length(title) * 0.60 * fs > avail
+        avail = 0.93 * plot_w_px
+        fs = 14
+        while fs > 10 && length(title) * CHAR_W * fs > avail
             fs -= 1
         end
-        annotate!(p, tx, ty, text(title, fs, C_TEXT, :left, :bold))
+        annotate!(p, tx, ty, text(title, fs, C_TEXT, :left))
         ty -= 0.062 * span
     end
-    for (lab, val) in hud
-        annotate!(p, tx, ty, text(lab, 11, C_DIM, :left))
-        annotate!(p, tx + 0.26 * (xlim[2] - xlim[1]), ty, text(val, 12, C_TEXT, :left, :bold))
-        ty -= 0.055 * span
+    # The value column is placed by MEASURING the longest label, not by a fixed
+    # fraction of the canvas. A fixed offset works until one label is longer
+    # than it allows for, and then the value lands on top of its own label.
+    if !isempty(hud)
+        lab_px = maximum(length(l) for (l, _) in hud) * CHAR_W * 13 + 20
+        dx     = lab_px / px_per_unit
+        for (lab, val) in hud
+            annotate!(p, tx, ty, text(lab, 13, C_DIM, :left))
+            annotate!(p, tx + dx, ty, text(val, 14, C_TEXT, :left))
+            ty -= 0.055 * span
+        end
     end
     return p
 end

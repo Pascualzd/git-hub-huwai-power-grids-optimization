@@ -274,7 +274,7 @@ function plot_network(bus, branch, generation, flows;
         shp = i == slack ? :rect : :circle
         scatter!(p, [x], [y]; ms = ms, color = col, markerstrokecolor = :white,
                  markerstrokewidth = 2, shape = shp, label = "")
-        annotate!(p, x, y, text(string(i), 9, :white, :center, :bold))
+        annotate!(p, x, y, text(string(i), 9, :white, :center))
 
         lbl = String[]
         g > 1e-6 && push!(lbl, @sprintf("G %.0f", g))
@@ -325,7 +325,7 @@ function plot_network(bus, branch, generation, flows;
     end
     for (k, l) in enumerate(labels)
         annotate!(p, lx[k], ly[k],
-                  text(l.str, l.sz, l.col, :center, :bold))
+                  text(l.str, l.sz, l.col, :center))
     end
 
     # ---- 3. a legend you can actually read ------------------------------
@@ -365,7 +365,7 @@ function plot_dispatch(gen, gencost, generation; title = "Dispatch vs capacity")
          color = RGB(0.17, 0.40, 0.62), linecolor = :white)
     for (i, u) in enumerate(used)
         annotate!(p, i, u + 0.05 * maximum(cap),
-                  text(@sprintf("%.0f MW\n\$%.0f/MWh", u, cost[i]), 9, RGB(0.05, 0.05, 0.07), :center, :bold))
+                  text(@sprintf("%.0f MW\n\$%.0f/MWh", u, cost[i]), 9, RGB(0.05, 0.05, 0.07), :center))
     end
     return p
 end

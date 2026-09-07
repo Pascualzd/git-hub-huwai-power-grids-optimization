@@ -178,6 +178,78 @@ function report(sol, label)
     end
 end
 
+
+# ---------------------------------------------------------------------------
+# 2b. BASELINE: solve the 3-bus system for comparison
+# ---------------------------------------------------------------------------
+# The whole point of this file is that the SAME dcopf function scales from
+# a 3-bus toy to a 14-bus standard. This section makes that explicit.
+
+gen3, gencost3, branch3, bus3 = load_case(HERE)   # loads the 3-bus CSVs
+sol3 = dcopf(gen3, branch3, gencost3, bus3, baseMVA)
+
+println("
+" * "="^78)
+println(" SCALING UP: from 3 buses to 14 buses")
+println("="^78)
+println("
+ The same dcopf() function, the same solver, two different grids:")
+println()
+
+# Side-by-side comparison
+solA_preview = dcopf(gen, branch, gencost, bus, baseMVA)
+
+comparison = DataFrame(
+    metric   = ["buses", "lines", "generators",
+                "installed capacity (MW)", "total load (MW)",
+                "decision variables", "balance constraints",
+                "hourly cost (USD/h)", "cheapest LMP (USD/MWh)",
+                "most expensive LMP (USD/MWh)"],
+    three_bus = [nrow(bus3), nrow(branch3), nrow(gen3),
+                 sum(gen3.pmax), sum(bus3.pd),
+                 nrow(gen3) + nrow(branch3) + nrow(bus3),      # GEN + FLOW + THETA
+                 nrow(bus3) + 1,                                # balance + slack
+                 sol3.cost,
+                 minimum(sol3.prices.lmp),
+                 maximum(sol3.prices.lmp)],
+    ieee_14  = [nrow(bus), nrow(branch), nrow(gen),
+                sum(gen.pmax), sum(bus.pd),
+                nrow(gen) + nrow(branch) + nrow(bus),
+                nrow(bus) + 1,
+                solA_preview.cost,
+                minimum(solA_preview.prices.lmp),
+                maximum(solA_preview.prices.lmp)]
+)
+
+rename!(comparison, :three_bus => Symbol("3-bus triangle"), :ieee_14 => Symbol("IEEE 14-bus"))
+pretty_table(comparison; alignment = [:l, :r, :r])
+
+@printf("
+ The network grew %.0fx in buses and %.0fx in lines,
+",
+        nrow(bus) / nrow(bus3), nrow(branch) / nrow(branch3))
+@printf(" yet the model structure is identical -- same objective, same constraints,
+")
+@printf(" different data tables. That is the point of the exercise.
+")
+
+# Combined figure: the two networks side by side
+p3 = plot_network(bus3, branch3, sol3.generation, sol3.flows;
+                  coords = BUS3_COORDS,
+                  title = @sprintf("3-bus triangle  |  \$%.0f/h", sol3.cost),
+                  size = (550, 550))
+p14 = plot_network(bus, branch, solA_preview.generation, solA_preview.flows;
+                   coords = IEEE14_COORDS,
+                   title = @sprintf("IEEE 14-bus  |  \$%.0f/h", solA_preview.cost),
+                   size = (550, 700))
+pCompare = plot(p3, p14; layout = grid(1, 2, widths = [0.40, 0.60]),
+                size = (1500, 750),
+                plot_title = "Scaling up: same model, bigger grid",
+                plot_titlefontsize = 14)
+savefig(pCompare, joinpath(HERE, "figures", "ieee14_vs_3bus.png"))
+println("
+ Figure written to figures/ieee14_vs_3bus.png")
+
 # ---------------------------------------------------------------------------
 # 3. SCENARIO A -- faithful case14, no thermal limits
 # ---------------------------------------------------------------------------

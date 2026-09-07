@@ -1,0 +1,16 @@
+quantity,value,source
+oahu_mean_net_load_mw,743.8589738542238,HECO IGP Workbook 3 via prepare_load.py
+oahu_peak_net_load_mw,1054.257588,same
+oahu_min_net_load_mw,472.580752,same
+oahu_load_cv,0.16791637906981863,same
+oahu_load_factor,0.7055761156676862,same
+oahu_capacity_mw,1508.1000000000001,EIA-860 2024 summer capacity
+oahu_utilisation,0.4932424732141262,derived
+oahu_n_buses,9.0,Census 2020 districts
+oahu_n_branches,10.0,HECO Power Delivery
+oahu_n_generators,24.0,EIA-860 2024
+oahu_top2_load_share,0.724074,Census 2020 population shares
+oahu_exp_system_cv,0.533740438820219,analytic: sqrt(sum share^2)
+ieee14_capacity_mw,772.4,MATPOWER case14
+ieee14_native_load_mw,259.0,MATPOWER case14
+ieee14_calibrated_mean_mw,380.98048631059106,case14 capacity x Oʻahu utilisation

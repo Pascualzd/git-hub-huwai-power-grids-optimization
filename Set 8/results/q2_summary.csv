@@ -1,0 +1,2 @@
+experiment,network,scenarios,capacity_mw,deliverable_mw,design_mean_mw,realised_mean_mw,demand_cv,p_expensive_on,p_shed,expected_shed_mw,ens_pct,p_any_at_limit,mean_lines_at_limit,mean_cost_usd,p95_cost_usd,mean_lmp_spread_served
+Q2 IEEE-14 Exp(1) @ Oʻahu utilisation,IEEE 14-bus,10000,772.4,575.1156220260899,380.9804863105911,380.28345716183964,0.4441888133462497,0.5963,0.4158,31.539909325571656,8.29378946982409,0.6095,1.3932,7784.943687434504,13882.110475453012,25.995534895286283
