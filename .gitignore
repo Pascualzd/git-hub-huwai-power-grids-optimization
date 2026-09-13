@@ -21,3 +21,11 @@ gr_fontconfig.log
 __pycache__/
 *.py[cod]
 .venv/
+
+# LaTeX build artefacts (Set 8 paper)
+Set 8/paper/*.aux
+Set 8/paper/*.log
+Set 8/paper/*.out
+Set 8/paper/*.toc
+Set 8/paper/*.fls
+Set 8/paper/*.fdb_latexmk
