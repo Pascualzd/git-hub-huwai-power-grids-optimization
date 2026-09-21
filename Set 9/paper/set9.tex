@@ -1,0 +1,667 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1.05in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage[hidelinks,breaklinks]{hyperref}
+\usepackage{cleveref}
+
+\sisetup{detect-weight=true, group-separator={,}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\theoremstyle{plain}
+\newtheorem{proposition}[definition]{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+\newtheorem{assumption}[definition]{Assumption}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\VOLL}{\mathrm{VOLL}}
+\newcommand{\MW}{\,\mathrm{MW}}
+\newcommand{\MWh}{\,\mathrm{MWh}}
+\newcommand{\okina}{\textquoteleft}
+\newcommand{\Oahu}{O\okina ahu}
+
+\definecolor{filed}{HTML}{1E4E8C}
+\definecolor{assum}{HTML}{B86F12}
+\newcommand{\Filed}{\textcolor{filed}{\textsc{filed}}}
+\newcommand{\Assum}{\textcolor{assum}{\textsc{assumed}}}
+
+\captionsetup{font=small,labelfont=bf}
+
+\title{\bfseries Machines, Not Dials:\\[0.25em]
+\large Chronological Unit Commitment and a Reconstructed\\
+Spatial Demand Field for the \Oahu{} Power System}
+
+\author{Pascual Z\'arate\thanks{The University of Chicago, Class of 2029.
+Prepared as Set 9 of an ongoing research project on island power-system
+optimisation. All code, data and numerical results are reproducible from the
+repository described in \Cref{app:repro}.}}
+
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A companion study (Set 8) found that the distributional assumption placed on
+nodal demand relocates, rather than merely inflates, estimated adequacy risk in
+a DC optimal power flow model of the \Oahu{} grid. That study represented
+generators by a single box constraint, $0 \le P_g \le P_g^{\max}$, and sampled
+hours independently with replacement. Both choices are load-bearing: the first
+removes every operating limit a thermal machine actually has, and the second
+destroys the temporal adjacency that such limits act upon. This paper rebuilds
+the experiment as a chronological mixed-integer unit commitment problem over
+$8{,}760$ consecutive hours, adding minimum stable generation, ramp limits,
+minimum up and down times, and start-up costs one constraint at a time.
+
+Two results follow. First, the binding constraint on this system is
+\emph{ramp}, not capacity: at a reserve margin of $43\%$ the fleet sheds energy
+in $0.61\%$ of hours once hour-to-hour movement is restricted, and in no hours
+before that. The shortfall is one of speed, and the earlier model was
+structurally blind to it. Second, and more consequentially for method, we show
+that the spatial demand field used by Set 8 --- and by most studies that have
+only a system-level load series --- is \emph{rank one}: a fixed share vector
+scaled by a scalar time series. Its direction cannot move, yet direction is the
+quantity the research question is about. We reconstruct a rank-two field from
+three public datasets, preserving the filed system total to
+$3\times10^{-4}\MW$ while allowing the share of load at the urban node to swing
+from $52.7\%$ to $84.1\%$ across the year, a diurnal rotation that emerges
+without being imposed.
+
+We report two errors found by self-audit during this work, with their
+quantified effect, and a $600$-run sensitivity protocol that converts the
+principal remaining judgement call into a measured statement. We conclude that
+every \emph{directional} result here is robust, and that no network
+\emph{magnitude} should be read as a claim about the physical \Oahu{} system,
+because the network representation is entirely assumed.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Island power systems are the cleanest available laboratory for adequacy
+questions. \Oahu{} has no interconnection: if the island cannot generate the
+energy, no neighbour can supply it. Every megawatt-hour served is produced
+within a $1{,}508\MW$ fleet of $24$ thermal units at six sites.
+
+Set 8 of this project asked what happens to computed adequacy risk when the
+analyst's distributional assumption about demand is wrong. The answer was that
+misspecification does not merely scale the risk estimate; it moves the risk to
+different nodes. That finding rested on a dispatch model in which a generator
+was a single interval constraint. A $128\MW$ steam unit could idle at $3\MW$,
+reach full output within the hour, and cycle on and off at no cost.
+
+This is not a small idealisation, and it is not obviously conservative. It is
+not clear \emph{a priori} whether removing operating limits makes a system look
+safer (any unit can always be called upon) or more dangerous (no unit is ever
+forced to stay on). The present paper resolves that question empirically and
+finds something more interesting than either: the limits create an entirely new
+failure mode, invisible to the earlier model, that has nothing to do with
+installed capacity.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item A chronological MILP unit commitment formulation over the full year
+  (\Cref{sec:model}), with an explicit treatment of the start-up ramp that is
+  \emph{necessary} rather than refining --- omitting it renders every steam unit
+  on this fleet permanently unstartable (\Cref{sec:startup}).
+\item A reproducible reconstruction of a spatially and temporally resolved
+  demand field from public data, raising the demand matrix from rank one to
+  rank two while preserving the filed system total exactly
+  (\Cref{sec:demand}).
+\item A constraint ladder that attributes every movement in the results to a
+  single added restriction (\Cref{sec:ladder,sec:results}).
+\item A self-audit reporting two errors in our own construction with their
+  quantified effect, and a sensitivity protocol over $600$ perturbed model
+  variants (\Cref{sec:audit,sec:sensitivity}).
+\end{enumerate}
+
+\paragraph{A note on epistemic labelling.}
+Throughout, quantities are marked \Filed{} when they originate in a government
+form or a regulatory filing, and \Assum{} when they are our own judgement. This
+is not decoration. \Cref{sec:limits} shows that the two findings of this paper
+rest on layers of very different evidential quality, and the distinction
+determines which of them may be quoted as a statement about \Oahu{}.
+
+\section{The \Oahu{} test system}
+\label{sec:system}
+
+\subsection{Generation}
+
+The fleet is taken from EIA Form 860 (2024, summer capacity) restricted to
+utility and contracted firm \Oahu{} plants: Kahe, Waiau, H-POWER, Kalaeloa,
+Campbell Industrial Park, and Schofield Generating Station. Airport emergency
+generators and refinery self-generation are excluded, as are solar, wind and
+battery resources, whose effect is already embedded in the net load series.
+Kalaeloa's two combustion turbines and steam tail are aggregated as a single
+$220\MW$ combined-cycle resource; dispatching the steam tail independently
+would be physically misleading.
+
+\begin{table}[htbp]
+\centering
+\caption{Composition of the modelled fleet. Capacities are \Filed{};
+operating limits are \Assum{} by technology class.}
+\label{tab:fleet}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Technology & Units & Capacity (\si{\mega\watt}) & $P^{\min}/P^{\max}$ & Ramp (\%/h) \\
+\midrule
+Oil steam            & 12 & 936.3 & 0.40 & 30 \\
+Combined cycle       &  1 & 220.0 & 0.40 & 50 \\
+Combustion turbine   &  3 & 215.4 & 0.00 & 100 \\
+Municipal waste      &  2 &  86.0 & 0.80 & 20 \\
+Internal combustion  &  6 &  50.4 & 0.00 & 100 \\
+\midrule
+\textbf{Total}       & \textbf{24} & \textbf{1{,}508.1} & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Half the fleet by unit count, and $62.1\%$ of it by capacity, is oil steam ---
+the class combining a high minimum stable generation with the slowest ramp. The
+genuinely flexible plant (combustion turbines and reciprocating engines, which
+may start from cold and move at full rate) totals only $265.8\MW$, or $17.6\%$
+of capacity. This structural fact drives the principal result of
+\Cref{sec:results}.
+
+\subsection{Demand}
+
+The load series is the 2021 base scenario of Hawaiian Electric's Integrated
+Grid Planning \Oahu{} Inputs Workbook 3, filed 2022-03-31 in PUC docket
+2018-0165. It is assembled from ten hourly layers as
+\[
+  \text{gross} = \text{underlying} + \text{managed EV} - \text{base forecast}
+                 + \text{future eBus},
+\]
+with net load subtracting distributed PV, four storage sectors, efficiency and
+time-of-use shifting. The result is $8{,}760$ observations with mean
+$743.9\MW$, minimum $472.6\MW$ and peak $1{,}054.3\MW$.
+
+\begin{remark}[Filed is not metered]
+\label{rem:filed}
+This series is a \emph{filed planning profile}, not a meter reading. It was
+submitted under oath to the regulator, so it is a real document; but it
+records what the utility modelled, not what the system recorded. We use
+``filed'' rather than ``measured'' throughout, and recommend the same
+discipline to anyone quoting these results.
+\end{remark}
+
+The reserve margin implied by \Cref{tab:fleet} against the annual peak is
+\[
+  \frac{1508.1 - 1054.3}{1054.3} = 43.0\%.
+\]
+This number should be held in mind throughout \Cref{sec:results}: the system is
+not short of installed capacity.
+
+\subsection{Network}
+\label{sec:network}
+
+The network is a stylised nine-bus representation: the seven \Oahu{} judicial
+districts as published by the Census as county subdivisions, with the Ewa
+district split into \textsc{Ewa-West}, \textsc{Ewa-Central} and \textsc{Kahe}.
+The split is necessary: point-in-polygon assignment on EIA-860 coordinates
+places all six modelled plants inside Ewa, which spans roughly twenty miles, so
+leaving it whole would collapse all island generation onto one node and erase
+precisely the injection geography the study exists to examine. Ten branches are
+wired as the two-corridor ring (one north, one south) that Hawaiian Electric
+describes in public material, leaving two independent loops --- a requirement,
+since a radial network makes DC-OPF and the transportation model identical.
+
+\begin{assumption}[The network is ours]
+\label{as:network}
+Bus \emph{locations} are \Filed{}: population-weighted 2020 census-tract
+centroids, and EIA plant coordinates. Every \emph{electrical} parameter is
+\Assum{}: the topology, line lengths (great-circle separation $\times 1.25$),
+reactance ($0.80\,\Omega$/mi at \SI{138}{\kilo\volt} on a \SI{100}{\mega\volt\ampere}
+base), thermal limits ($200\MW$ per circuit) and circuit counts. Not one comes
+from a filing.
+\end{assumption}
+
+\Cref{as:network} is the reason \Cref{sec:congestion} declines to interpret the
+magnitude of any congestion statistic.
+
+\section{Chronological unit commitment}
+\label{sec:model}
+
+\subsection{Formulation}
+
+Let $\mathcal{G}$ index units, $\mathcal{N}$ buses, $\mathcal{L}$ branches and
+$\mathcal{T}$ the hours of a block. Binary $u_{g,t}$ denotes commitment, with
+start-up $v_{g,t}$ and shut-down $w_{g,t}$. Continuous $P_{g,t}$ is output,
+$\theta_{n,t}$ the voltage angle and $s_{n,t} \ge 0$ load shed. The objective is
+\begin{equation}
+\min \sum_{t\in\mathcal{T}}\Bigl[
+  \sum_{g\in\mathcal{G}} \bigl(c_g P_{g,t} + C^{\mathrm{su}}_g v_{g,t}\bigr)
+  + \VOLL \sum_{n\in\mathcal{N}} s_{n,t}
+  + \epsilon \sum_{g} g\,P_{g,t}
+\Bigr],
+\label{eq:obj}
+\end{equation}
+with $\VOLL = \SI{10000}{\text{USD}\per\mega\watt\hour}$ and a tie-break term
+$\epsilon = 10^{-6}$ that makes dispatch unique between cost-identical units.
+The tie-break is a correctness device, not a cosmetic one: without it, equal-cost
+units receive an arbitrary split and results are not reproducible across solver
+versions.
+
+Subject to nodal balance, DC flow $f_{\ell,t} = b_\ell(\theta_{n,t}-\theta_{m,t})$
+with $|f_{\ell,t}| \le \bar f_\ell$, an angular reference at the urban bus, and
+the operating constraints
+\begin{align}
+P^{\min}_g u_{g,t} &\le P_{g,t} \le P^{\max}_g u_{g,t}, \label{eq:pmin}\\
+u_{g,t} - u_{g,t-1} &= v_{g,t} - w_{g,t}, \label{eq:logic}\\
+\textstyle\sum_{\tau=t-T^{\mathrm{up}}_g+1}^{t} v_{g,\tau} &\le u_{g,t},
+\qquad
+\textstyle\sum_{\tau=t-T^{\mathrm{dn}}_g+1}^{t} w_{g,\tau} \le 1-u_{g,t}.
+\label{eq:minupdn}
+\end{align}
+
+\subsection{The start-up ramp is necessary, not refining}
+\label{sec:startup}
+
+The naive ramp constraint $|P_{g,t}-P_{g,t-1}| \le R_g$ is wrong here, and
+catastrophically so. On this fleet every steam unit has
+$P^{\min}_g = 0.40 P^{\max}_g$ but $R_g = 0.30 P^{\max}_g$. Starting up requires
+moving from $0$ to $P^{\min}_g$ within one hour by \eqref{eq:pmin}, a step of
+$0.40P^{\max}_g > R_g$. The unit is therefore \emph{permanently unstartable}.
+
+\begin{proposition}
+If $P^{\min}_g > R_g$ and ramping is enforced without a start-up allowance, then
+any unit off at $t=0$ satisfies $u_{g,t}=0$ for all $t$.
+\end{proposition}
+
+Our first implementation did exactly this and reported load shedding in
+$95.8\%$ of hours --- an apparent collapse of the \Oahu{} system that was
+entirely an artefact of formulation. The correct form separates the start-up
+movement, with $S_g = \max(P^{\min}_g, R_g)$:
+\begin{align}
+P_{g,t} - P_{g,t-1} &\le R_g u_{g,t-1} + S_g v_{g,t}, \label{eq:rampup}\\
+P_{g,t-1} - P_{g,t} &\le R_g u_{g,t}   + S_g w_{g,t}. \label{eq:rampdn}
+\end{align}
+
+\begin{remark}[The diagnostic was economic, not numerical]
+\label{rem:tell}
+The solver reported optimality at every block. No exception was raised. The
+error surfaced because the \emph{dispatch pattern} was economically absurd:
+cheap steam capacity idle while expensive diesel engines ran continuously, with
+$43\%$ of capacity unused during a purported shortage. We record this because
+it generalises --- in mixed-integer dispatch models, implausible economics is a
+more sensitive detector of specification error than any solver diagnostic.
+\end{remark}
+
+\subsection{Rolling horizon}
+
+Ramp constraints couple $t$ to $t-1$; minimum up/down times couple a commitment
+decision to several subsequent hours. Set 8 sampled hours independently with
+replacement, so hour $5{,}000$ could follow hour $12$ and no ``previous hour''
+existed for \eqref{eq:rampup} to reference. Set 9 therefore solves the year as
+$365$ consecutive $24$-hour blocks, carrying $(u,P,T^{\mathrm{up}},T^{\mathrm{dn}})$
+across each boundary. This is a different experimental design, not a refinement,
+which is why Set 9 reuses none of Set 8's numerical results. Blocks are capped
+at a $1\%$ optimality gap and $20$ seconds; capped blocks are counted and
+reported.
+
+\section{Reconstructing the spatial demand field}
+\label{sec:demand}
+
+\subsection{The rank-one problem}
+
+Let $D \in \R^{9 \times 8760}$ be the bus-by-hour demand matrix. Set 8, like
+essentially every study with only a system-level load series, constructed
+\begin{equation}
+  D = \alpha\, \ell^{\top}, \qquad \alpha \in \Delta^{8}, \;\; \ell \in \R^{8760},
+\label{eq:rank1}
+\end{equation}
+with $\alpha$ the 2020 resident-population share vector. Then
+$\rank(D) = 1$: the $78{,}840$ entries carry only $8{,}760$ degrees of freedom,
+the nine bus loads can only scale together, and the demand \emph{direction}
+$D_{:,t}/\|D_{:,t}\|_1$ is constant in $t$.
+
+This is a serious problem for the present research question. Set 8's own
+finding is that direction governs adequacy. Equation \eqref{eq:rank1} holds
+direction fixed by construction, so the quantity of interest was the one
+quantity the data could not express.
+
+\subsection{Static sector reallocation}
+
+The first repair replaces population with a sector-weighted key:
+\begin{equation}
+  \alpha_i = f_{\mathrm{res}}\frac{\mathrm{pop}_i}{\sum_j \mathrm{pop}_j}
+           + f_{\mathrm{com}}\frac{\mathrm{com}_i}{\sum_j \mathrm{com}_j}
+           + f_{\mathrm{ind}}\frac{\mathrm{ind}_i}{\sum_j \mathrm{ind}_j},
+\label{eq:v2}
+\end{equation}
+with sector energy shares $f$ from EIA Form 861 restricted to Hawaiian Electric
+Co Inc, the \Oahu{} operating entity ($f_{\mathrm{res}},f_{\mathrm{com}},
+f_{\mathrm{ind}} = 0.2675, 0.3112, 0.4213$), residential sited by Census
+population and the two employment sectors by LEHD LODES workplace jobs.
+Normalising each key separately is what makes the terms commensurable; the
+shares then sum to unity automatically, since each key sums to one and
+$\sum_s f_s = 1$.
+
+\Oahu{} is a commuter island: the Honolulu district holds $39.9\%$ of residents
+but $71.0\%$ of jobs. Allocating by residence therefore exports a large block of
+commercial load out of the urban core in every hour. Under \eqref{eq:v2} the
+Honolulu share rises from $39.87\%$ to $56.89\%$. The method is not simply
+urban-biased: \textsc{Ewa-West} \emph{gains} share ($2.96\% \to 4.73\%$) despite
+few residents, because Campbell Industrial Park places $7.76\%$ of the island's
+industrial employment there against $2.96\%$ of its population.
+
+But \eqref{eq:v2} is still of the form \eqref{eq:rank1}. The rank is still one.
+
+\subsection{Sector-resolved hourly allocation}
+\label{sec:v3}
+
+The rank barrier is structural: any single share vector, however well
+estimated, yields a rank-one field. Rank rises only if sectors with
+\emph{different spatial footprints} also have \emph{different temporal
+profiles}. Writing $a_{i,s}$ for the share of sector $s$ at bus $i$ and
+$\gamma_s(t)$ for its system-level hourly load,
+\begin{equation}
+  D_{i,t} = \sum_{s} a_{i,s}\,\gamma_s(t) \;-\; \pi_i\, \mathrm{dg}(t),
+\label{eq:v3}
+\end{equation}
+where $\mathrm{dg}(t)$ is the behind-the-meter layer and $\pi$ its (assumed)
+spatial key. Sector profiles $\gamma_s$ are built from OpenEI TMY3 reference
+buildings at Honolulu weather, folded into $12 \times 2 \times 24 = 576$
+month/weekend/hour cells so that repeatable rhythm is retained and single-year
+weather noise is averaged out. The commercial profile is an energy-weighted
+composite of fifteen reference building types.
+
+Two implementation details matter. Behind-the-meter PV can exceed a suburban
+bus's gross draw at midday, which \eqref{eq:v3} would render negative; since the
+network model admits no negative injection at a load bus, such values are
+clipped at zero and the surplus redistributed proportionally. This is a genuine
+loss of realism --- \Oahu{} does have circuits exporting at midday --- and it is
+visible in the results as a minimum share of exactly $0.00\%$ at
+\textsc{Waianae}. Finally, all bus loads are rescaled so that
+$\sum_i D_{i,t}$ reproduces the filed net load exactly.
+
+\subsection{Verification}
+
+\begin{table}[htbp]
+\centering
+\caption{Verification of the reconstructed field. Only the distribution of
+demand is altered; its total is preserved.}
+\label{tab:verify}
+\small
+\begin{tabular}{lrrr}
+\toprule
+ & v1 (population) & v2 (sector) & v3 (hourly) \\
+\midrule
+Matrix rank                       & 1 & 1 & \textbf{2} \\
+Singular values                   & --- & --- & 62.7, 5.79, 0.14 \\
+Honolulu share, minimum           & 39.87\% & 56.89\% & 52.71\% \\
+Honolulu share, maximum           & 39.87\% & 56.89\% & \textbf{84.10\%} \\
+Annual swing (points)             & 0.00 & 0.00 & \textbf{31.38} \\
+Max error vs filed total (\si{\mega\watt}) & --- & --- & $3\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The rank is two rather than three because industrial load is modelled flat and
+therefore contributes no independent temporal variation; the second dimension
+is entirely residential-versus-commercial. We regard reporting rank two as more
+honest than engineering a third from data we do not have.
+
+The diurnal pattern is not imposed. Averaged over the year, the Honolulu share
+runs $55.8\%$ at midnight, $75.4\%$ at noon and $53.7\%$ at 22:00. Two
+mechanisms push the same way at midday: commercial load peaks in the urban core
+while distributed PV suppresses net load in the residential periphery.
+
+\section{Experimental design}
+\label{sec:ladder}
+
+Constraints are added one at a time, so that any movement in a reported
+statistic is attributable to a single restriction:
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em,itemsep=1pt]
+\item \texttt{lp}: $0 \le P \le P^{\max}$ --- Set 8's constraint set, as control;
+\item \texttt{pmin}: binary commitment and \eqref{eq:pmin};
+\item \texttt{ramp}: \eqref{eq:rampup}--\eqref{eq:rampdn};
+\item \texttt{full}: \eqref{eq:minupdn} and start-up costs.
+\end{enumerate}
+
+\section{Results}
+\label{sec:results}
+
+\subsection{The constraint ladder}
+
+\begin{table}[htbp]
+\centering
+\caption{The constraint ladder under the reconstructed (v3) demand field, full
+year. ENS is energy not served.}
+\label{tab:ladder}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Rung & Hours at a line limit & Hours shedding & ENS (\si{\mega\watt\hour}) & Cost (\$M) \\
+\midrule
+\texttt{lp}   & 94.77\% & 0.00\% & 0.0  & 688.5 \\
+\texttt{pmin} & 58.93\% & 0.00\% & 0.0  & 693.3 \\
+\texttt{ramp} & 90.37\% & \textbf{0.61\%} & \textbf{33.8} & 689.0 \\
+\texttt{full} & 62.66\% & 0.21\% & 11.7 & 689.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ramp, not capacity, is the binding constraint}
+
+The system serves all load at the first two rungs. Energy is shed only once
+\eqref{eq:rampup} is imposed --- in $0.61\%$ of hours, about $53$ hours per
+year, totalling $33.8\MWh$. Nothing about installed capacity changes between
+\texttt{pmin} and \texttt{ramp}; only the permitted rate of change does. At a
+$43\%$ reserve margin, the machines exist and cannot arrive in time.
+
+This is the paper's substantive new result, and it is a category of risk the
+earlier model could not represent, because a model without temporal adjacency
+has nothing for a rate limit to bind against. It is also small: $33.8\MWh$
+against annual consumption near $6.5\,\mathrm{TWh}$. It is not zero, and
+storage is precisely the technology that removes it, which makes storage the
+natural next study rather than a generic recommendation.
+
+Shedding \emph{falls} from \texttt{ramp} to \texttt{full}. This is not
+paradoxical: minimum up-times force units to remain committed through quiet
+hours, so more capacity is already synchronised and able to move when demand
+rises. Commitment inertia is a cost in fuel and a benefit in flexibility.
+
+\subsection{Congestion: direction without magnitude}
+\label{sec:congestion}
+
+The fraction of hours with at least one line at its limit moves substantially
+across the ladder ($94.77\% \to 58.93\% \to 90.37\% \to 62.66\%$). The pattern
+is interpretable --- committing fewer, larger units concentrates injection and
+loads the corridors; minimum up-times then spread it again --- but by
+\Cref{as:network} every line rating and reactance producing these numbers is
+our own. We therefore report the direction and explicitly decline to interpret
+the magnitude. These are statements about a nine-bus sketch, not about the
+\Oahu{} transmission system.
+
+\section{Self-audit}
+\label{sec:audit}
+
+Two errors in our own construction were found after the first complete set of
+results, and both changed the answer. We report them with their effect.
+
+\subsection{Reference-calendar misalignment}
+
+The OpenEI reference-building simulations run on a calendar year beginning on a
+Sunday; 2021 begins on a Friday. Both are non-leap, so \emph{dates} correspond
+exactly and our implementation assumed \emph{weekdays} did too. They are two
+days apart. The consequence was that simulated Saturday and Sunday were filed
+as Thursday and Friday: a large office read as busier at the weekend than
+midweek. The diagnostic signature is unmistakable in the raw profile --- the
+2\,p.m.\ load for a large office in June reads $1{,}568$, $1{,}568$, $953$,
+$532$, $1{,}566$, $1{,}567$, $1{,}567$ \si{\kilo\watt} on days labelled Tuesday
+through Monday. The weekly pattern is correct; it sits on the wrong days.
+
+The offset was confirmed independently against three building types with a
+genuine work-week signal (large office, primary school, hospital), all implying
+$+2$. Correcting it moved the weekend-to-weekday commercial ratio from $1.14$ to
+$0.63$ at the profile level. The hour-of-day curve moved by at most $0.036$ of
+its peak and the peak hour remained 13:00 --- so the headline diurnal result
+was unaffected, while the weekly rhythm had been inverted.
+
+\subsection{Headcount as a proxy for energy}
+
+The commercial composite was initially weighted by employment alone, which
+assumes an office worker and a hotel worker represent equal load. EIA CBECS
+2018 (table C22 over table B1) gives electricity per worker by principal
+building activity: $58{,}888$ \si{\kilo\watt\hour} for food sales, $36{,}179$
+for lodging, $20{,}266$ for mercantile, and $6{,}912$ for office --- the lowest
+of any activity measured. Re-weighting by estimated energy moves offices from
+$39.5\%$ of the commercial blend to $18.4\%$, with lodging/food and retail each
+gaining roughly twelve points.
+
+The substantive finding is that \Oahu{}'s commercial load is
+\emph{tourism-shaped rather than office-shaped}, and headcount weighting
+concealed it. The observable consequence is again the working week: hotels,
+restaurants and shops trade seven days where offices do not, so the
+weekend-to-weekday ratio rises from $0.757$ to $0.809$ in the delivered field.
+CBECS intensities are national; applied to a tourism economy they likely
+understate lodging, making this correction conservative.
+
+\section{Sensitivity}
+\label{sec:sensitivity}
+
+The allocation of each employment category across building types
+(\Cref{sec:v3}) has no source and remains our judgement. Rather than declare it,
+we tested it: the commercial profile was rebuilt under $300$ random
+within-category mixes and $300$ random between-category re-weightings spanning
+a ninefold range, measuring the maximum deviation of the normalised hour-of-day
+curve.
+
+\begin{table}[htbp]
+\centering
+\caption{Sensitivity of the hour-of-day commercial profile. A deviation of
+$1.000$ would indicate complete change of shape.}
+\label{tab:sens}
+\small
+\begin{tabular}{lrr}
+\toprule
+Perturbation & Max deviation & Peak hour \\
+\midrule
+Equal weights within category      & 0.007 & 13:00 \\
+Largest building type only         & 0.055 & 13:00 \\
+Health care $\times 3$             & 0.070 & 13:00 \\
+Lodging and food $\times 3$        & 0.090 & 13:00 \\
+\textbf{Worst of 600 random variants} & \textbf{0.104} & \textbf{13:00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The peak hour never moved. The mechanism is transparent: every commercial
+building type shares a daytime-peaking profile, and averaging mutually
+consistent curves cannot produce much disagreement. This contrasts instructively
+with the calendar error of \Cref{sec:audit}, which was \emph{structural} --- it
+relocated load onto the wrong days --- and therefore mattered far more than a
+large error in weights.
+
+The result's own boundary is equally clear. It holds because nothing in the
+average runs at night. Uniformed military personnel are excluded from LODES, so
+Pearl Harbor--Hickam, Schofield Barracks and K\=ane\okina ohe Marine Corps Base
+--- large, continuously operating loads --- contribute nothing to these
+profiles. That, not the building mix, is the live exposure.
+
+\section{Limitations}
+\label{sec:limits}
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{Operating limits are assumed.} Neither EIA-860 nor EIA-923 carries
+  unit-level minimum stable output or ramp rate, and the IGP workbooks expose no
+  traceable unit table for them. \Cref{tab:fleet} therefore rests on technology
+  class conventions. The ramp result of \Cref{sec:results} depends entirely on
+  these values; obtaining verified operating data is the highest-value
+  improvement available to this model.
+\item \textbf{The network is assumed} (\Cref{as:network}).
+\item \textbf{Military load is absent}, as above.
+\item \textbf{Vintage mismatch.} The fleet is 2024 vintage; the load series is
+  2021. AES Hawaii ($180\MW$ of coal) retired in September 2022 and is correctly
+  absent from the fleet, but served the 2021 load. The model therefore asks a
+  post-AES fleet to serve pre-AES demand --- a defensible scenario, but not a
+  reconstruction of either year, and it should be named as such.
+\item \textbf{No forced outages, no $N-1$, no storage.} Every unit is available
+  in every hour. For an adequacy study this remains the largest single gap.
+\item \textbf{Reference-building profiles} are typical-year simulations, not
+  \Oahu{}'s metered sector loads; industrial load is flat; distributed PV is
+  allocated by population.
+\end{enumerate}
+
+\section{Conclusion}
+
+Modelling \Oahu{}'s generators as machines rather than dials does not overturn
+the Set 8 finding that the assumed demand distribution governs computed risk. It
+does reveal a failure mode the earlier formulation could not express: at a $43\%$
+reserve margin the fleet is unable to follow real demand in roughly $53$ hours
+per year, shedding $33.8\MWh$. The constraint that binds is rate, not quantity.
+
+Methodologically, we argue that the rank-one demand field implicit in
+system-total load data is a more serious limitation than it is usually treated
+as, and that it can be partially repaired from public data. The reconstruction
+presented here raises the field to rank two and produces a diurnal rotation of
+the demand direction of $31.4$ percentage points, while preserving the filed
+system total to $3\times10^{-4}\MW$.
+
+Finally, we note that of the two errors found by self-audit, the damaging one
+was structural rather than numerical, while a deliberately mis-specified
+building mix --- tested over $600$ variants --- barely moved the answer. We take
+this as an argument for auditing the \emph{shape} of an assumption before
+refining its parameters.
+
+\appendix
+
+\section{Reproducibility}
+\label{app:repro}
+
+All results are reproducible from the project repository. The Set 9 pipeline is:
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt]
+\item \texttt{prepare\_demand.py} --- static sector reallocation, \eqref{eq:v2}.
+\item \texttt{prepare\_hourly\_demand.py} --- sector-resolved hourly field,
+  \eqref{eq:v3}. Both scripts download their own sources.
+\item \texttt{fleet.jl} --- case construction; all assumed parameters are
+  declared here and nowhere else.
+\item \texttt{commitment.jl} --- the MILP, \eqref{eq:obj}--\eqref{eq:rampdn}.
+\item \texttt{run\_hourly.jl} --- the ladder under v1, v2 and v3.
+\end{enumerate}
+Raw archives are SHA-256 pinned in \texttt{SOURCES.md}; the demand
+reconstruction, its verification and its sensitivity analysis are documented in
+\texttt{DATA\_REBUILD.md}.
+
+\section{Assumed parameters}
+\label{app:assumed}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Parameters with no documentary source, collected for challenge.}
+\begin{tabular}{llr}
+\toprule
+Parameter & Basis & Value \\
+\midrule
+$P^{\min}/P^{\max}$, oil steam & technology class & 0.40 \\
+Ramp, oil steam & technology class & 30\%/h \\
+Minimum up-time, oil steam & convention & 8 h \\
+Minimum up-time, municipal waste & continuous refuse feed & 24 h \\
+Start-up cost & convention, USD per \si{\mega\watt} capacity & 20--100 \\
+Line thermal limit & per \SI{138}{\kilo\volt} circuit & $200\MW$ \\
+Line reactance & at \SI{138}{\kilo\volt}, \SI{100}{\mega\volt\ampere} base & $0.80\,\Omega$/mi \\
+Routing factor & great-circle multiplier & 1.25 \\
+$\VOLL$ & convention & \SI{10000}{\text{USD}\per\mega\watt\hour} \\
+Ewa split meridian & by census tract & $-158.075^\circ$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
