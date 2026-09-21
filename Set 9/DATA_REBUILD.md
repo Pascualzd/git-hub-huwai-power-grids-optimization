@@ -292,6 +292,79 @@ personnel, so Pearl Harbor–Hickam, Schofield and Kāneʻohe contribute **nothi
 to this shape despite running around the clock. The exposure is there, not in the
 building mix.
 
+## Sensitivity: the three gas turbines, against filed EIA-860 start times
+
+The building-mix test above probes *our own* judgement. This one probes a
+judgement that a filed record **contradicts**.
+
+EIA-860's `Operable` sheet carries a field we had overlooked — **`Time from Cold
+Shutdown to Full Load`** — now extracted for all 24 units into
+`data/processed/oahu_generators.csv` (`cold_start_eia860`, `cold_start_source`).
+It corroborates four of our five technology classes and contradicts the fifth:
+
+| Units | Prime mover | Filed cold start | Modelled as | Verdict |
+|---|---|---|---|---|
+| Schofield S1–S6 (50.4 MW) | IC | 10 min | fast, min-up 1 h | agrees |
+| Kalaeloa (220 MW) | CT/CA | 1 h | combined cycle, min-up 6 h | agrees |
+| Kahe + Waiau steam (936.3 MW) | ST | 12 h | steam, min-up 8 h | agrees |
+| H-POWER (86 MW) | ST | over 12 h | must-run, min-up 24 h | agrees |
+| **Waiau W9, W10, CIP1 (215.4 MW)** | **GT** | **12 h** | **peaker, min-up 1 h** | **contradicts** |
+
+Those three are **14.2% of installed capacity** and the only units in the model
+that can go zero-to-full inside an hour.
+
+### What the `gt_slow` case changes — and deliberately does not
+
+`Set 9/run_gt_slow.jl` re-specifies **only** the parameters a start time bears on:
+
+| Parameter | Baseline | `gt_slow` |
+|---|---:|---:|
+| Minimum up time | 1 h | **8 h** |
+| Minimum down time | 1 h | **8 h** |
+| Start-up cost | $20/MW | **$75/MW** |
+| `p_min` | 0 | *unchanged* |
+| Ramp rate | 100%/h | *unchanged* |
+
+`p_min` and ramp are held because the filing says nothing about them: a machine
+can be slow to light off from cold and still move fast once synchronised. Only
+the `:full` rung reads min-up/min-down/start-up cost, so only `:full` is re-run.
+
+### Result
+
+| Metric | Baseline v3 `:full` | `gt_slow` | Change |
+|---|---:|---:|---:|
+| Hours with load shed | 18 | 18 | **0** |
+| Energy not served (MWh) | 11.67 | 10.29 | −1.39 |
+| Total cost ($M) | 689.84 | 689.73 | −0.11 |
+| Hours with a line at limit | 5,489 | 5,546 | +57 |
+
+**The headline does not move.** Shed hours are identical. The cost change is
+0.016% and the ENS change is 1.4 MWh against ~6.5 million MWh of annual energy —
+one to two orders of magnitude *inside* the 1% MIP-gap tolerance every block is
+solved to. Read them as solver noise, not as improvement. Slower turbines do
+not help; the model simply cannot tell the difference at this rung.
+
+The change is not inert, though: 57 more hours carry a line at its limit, so the
+commitment schedule genuinely moved. The schedule just had slack to absorb it.
+
+### What this does NOT clear
+
+The headline Set 9 result is produced at the **`:ramp`** rung, which by
+construction reads neither min-up/min-down nor start-up cost. **This sensitivity
+cannot vindicate it.** The parameter that result rests on is the hourly **ramp
+rate**, and EIA-860 says nothing about ramp rate. It stays an uncited technology
+convention.
+
+And note the direction: if those three turbines really are slower than modelled,
+the model **overstates** island flexibility, so the ramp shortfall we report is a
+**lower bound**. The error runs the conservative way.
+
+Reproduce with:
+
+```bash
+julia "Set 9/run_gt_slow.jl"      # writes Set 9/results/set9_gt_slow.csv
+```
+
 ## Remaining limitations
 
 1. The shapes are **typical-year reference buildings** at Honolulu weather, not
@@ -309,3 +382,8 @@ building mix.
    Electric's Locational Value Map — circuit-level, but not available in bulk.
 4. **LODES still excludes uniformed military**, so Wahiawa (Schofield) and
    Koolaupoko (Kaneohe) remain under-weighted.
+5. **`p_min`, ramp rate and min-up/min-down are uncited technology conventions.**
+   EIA-860's cold-start field (above) is the only filed evidence we have on unit
+   flexibility; it corroborates four classes, contradicts the combustion
+   turbines, and speaks to none of these three parameters directly. Verified
+   unit-level operating data is still the highest-value improvement available.

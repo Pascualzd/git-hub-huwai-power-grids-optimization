@@ -1,0 +1,2 @@
+demand,fleet,rung,cost_musd,p_shed,ens_mwh,p_at_limit,mean_lines_at_limit,blocks_capped,solve_s
+v3,gt_slow,full,689.7314160025255,0.2054794520547945,10.288836014990634,63.31050228310502,0.6368721461187214,0,544.5722899436951

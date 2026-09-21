@@ -28,7 +28,12 @@ DOWNLOADS = {
         "https://www.hawaiianelectric.com/documents/clean_energy_hawaii/"
         "integrated_grid_planning/20220519_final_oahu_inputs_workbook_4_revised.xlsx"
     ),
-    "eia8602024.zip": "https://www.eia.gov/electricity/data/eia860/xls/eia8602024.zip",
+    # EIA moves a year out of /xls/ into /archive/xls/ once the next vintage
+    # ships. The /xls/ path now returns an HTML error page, not the ZIP.
+    # The archived file is byte-identical: its SHA-256 matches the pin below.
+    "eia8602024.zip": (
+        "https://www.eia.gov/electricity/data/eia860/archive/xls/eia8602024.zip"
+    ),
     "f923_2024.zip": (
         "https://www.eia.gov/electricity/data/eia923/archive/xls/f923_2024.zip"
     ),

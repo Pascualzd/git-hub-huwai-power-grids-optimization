@@ -152,21 +152,23 @@ would be physically misleading.
 
 \begin{table}[htbp]
 \centering
-\caption{Composition of the modelled fleet. Capacities are \Filed{};
-operating limits are \Assum{} by technology class.}
+\caption{Composition of the modelled fleet. Capacities and cold-start times are
+\Filed{}; $P^{\min}$ and ramp are \Assum{} by technology class. The final column
+is EIA-860's \emph{Time from Cold Shutdown to Full Load}; it corroborates every
+class but one.}
 \label{tab:fleet}
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrl}
 \toprule
-Technology & Units & Capacity (\si{\mega\watt}) & $P^{\min}/P^{\max}$ & Ramp (\%/h) \\
+Technology & Units & Capacity (\si{\mega\watt}) & $P^{\min}/P^{\max}$ & Ramp (\%/h) & Cold start \\
 \midrule
-Oil steam            & 12 & 936.3 & 0.40 & 30 \\
-Combined cycle       &  1 & 220.0 & 0.40 & 50 \\
-Combustion turbine   &  3 & 215.4 & 0.00 & 100 \\
-Municipal waste      &  2 &  86.0 & 0.80 & 20 \\
-Internal combustion  &  6 &  50.4 & 0.00 & 100 \\
+Oil steam            & 12 & 936.3 & 0.40 & 30  & \SI{12}{\hour} \\
+Combined cycle       &  1 & 220.0 & 0.40 & 50  & \SI{1}{\hour} \\
+Combustion turbine   &  3 & 215.4 & 0.00 & 100 & \textbf{\SI{12}{\hour}} \\
+Municipal waste      &  2 &  86.0 & 0.80 & 20  & $>\SI{12}{\hour}$ \\
+Internal combustion  &  6 &  50.4 & 0.00 & 100 & \SI{10}{\minute} \\
 \midrule
-\textbf{Total}       & \textbf{24} & \textbf{1{,}508.1} & & \\
+\textbf{Total}       & \textbf{24} & \textbf{1{,}508.1} & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -177,6 +179,19 @@ genuinely flexible plant (combustion turbines and reciprocating engines, which
 may start from cold and move at full rate) totals only $265.8\MW$, or $17.6\%$
 of capacity. This structural fact drives the principal result of
 \Cref{sec:results}.
+
+The final column of \Cref{tab:fleet} is the one piece of filed evidence bearing
+on how fast these machines actually move, and it was added after the model was
+built. Four of the five classes agree with what we assumed. The combustion
+turbines do not: the three units we model as quick-start peakers ---
+$P^{\min}=0$, full ramp within the hour, minimum up time of one hour --- file
+the same twelve-hour cold-start code as the oil steam units. We did not silently
+adopt the filing, because cold-start time is not minimum up time, not minimum
+down time, and not ramp rate while already synchronised. We ran it as a
+sensitivity case instead (\Cref{sec:gtslow}), and the direction of the
+discrepancy is worth naming here: if those turbines are slower than modelled,
+the model \emph{overstates} \Oahu{}'s flexibility, and the ramp shortfall
+reported below is a lower bound.
 
 \subsection{Demand}
 
@@ -536,6 +551,11 @@ understate lodging, making this correction conservative.
 \section{Sensitivity}
 \label{sec:sensitivity}
 
+Two assumptions are tested here: our own allocation of employment across
+building types, and the fleet flexibility that a filed record contradicts.
+
+\subsection{The commercial building mix}
+
 The allocation of each employment category across building types
 (\Cref{sec:v3}) has no source and remains our judgement. Rather than declare it,
 we tested it: the commercial profile was rebuilt under $300$ random
@@ -575,16 +595,94 @@ Pearl Harbor--Hickam, Schofield Barracks and K\=ane\okina ohe Marine Corps Base
 --- large, continuously operating loads --- contribute nothing to these
 profiles. That, not the building mix, is the live exposure.
 
+\subsection{Re-specifying the combustion turbines}
+\label{sec:gtslow}
+
+The second sensitivity is not a perturbation of our own judgement but a test of
+a filed contradiction. EIA-860 reports a twelve-hour cold-start time for Waiau
+W9, W10 and Campbell Industrial Park CIP1 --- $215.4\MW$, $14.2\%$ of installed
+capacity, and the only units in the baseline able to go from zero to full output
+inside an hour.
+
+We re-specified exactly the three parameters that a start time bears on, and no
+others:
+%
+\begin{center}
+\small
+\begin{tabular}{lrr}
+\toprule
+Parameter & Baseline & \texttt{gt\_slow} \\
+\midrule
+Minimum up time        & \SI{1}{\hour}  & \SI{8}{\hour} \\
+Minimum down time      & \SI{1}{\hour}  & \SI{8}{\hour} \\
+Start-up cost          & \$20/\si{\mega\watt} & \$75/\si{\mega\watt} \\
+\midrule
+$P^{\min}$             & \multicolumn{2}{c}{$0$ --- unchanged} \\
+Ramp rate              & \multicolumn{2}{c}{$100\%$/h --- unchanged} \\
+\bottomrule
+\end{tabular}
+\end{center}
+%
+$P^{\min}$ and ramp are held because the filing does not speak to them: a
+machine may be slow to light off from cold and still move quickly once
+synchronised. Only the \texttt{:full} rung reads minimum up and down times or
+start-up cost, so only that rung is re-run.
+
+\begin{table}[htbp]
+\centering
+\caption{The combustion turbines re-specified against their filed cold-start
+time, \texttt{:full} rung, v3 demand.}
+\label{tab:gtslow}
+\small
+\begin{tabular}{lrrr}
+\toprule
+& Baseline & \texttt{gt\_slow} & Change \\
+\midrule
+Hours with load shed      & 18     & 18     & $0$ \\
+Energy not served (\si{\mega\watt\hour}) & 11.67 & 10.29 & $-1.39$ \\
+Total cost (\$M)          & 689.84 & 689.73 & $-0.11$ \\
+Hours with a line at limit & 5{,}489 & 5{,}546 & $+57$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The headline does not move. The number of shed hours is identical, and the
+changes in cost ($0.016\%$) and in energy not served ($1.39\MWh$ against an
+annual energy of roughly $6.5$ million \si{\mega\watt\hour}) are one to two
+orders of magnitude inside the $1\%$ MIP-gap tolerance at which every block is
+solved. We therefore read them as solver noise, not as an improvement --- and
+certainly not as evidence that slower turbines help.
+
+The re-specification is nonetheless not inert: $57$ additional hours carry a
+line at its limit, so the commitment schedule genuinely changed. What the
+experiment shows is that at this rung the schedule has enough slack elsewhere to
+absorb the change.
+
+\begin{remark}[What this sensitivity does \emph{not} clear]
+\label{rem:notcleared}
+The principal result of \Cref{sec:results} is produced at the \texttt{:ramp}
+rung, which by construction reads neither minimum up and down times nor start-up
+costs. This sensitivity therefore cannot vindicate it. The parameter that result
+rests on is the hourly \emph{ramp rate}, and EIA-860 says nothing about ramp
+rate. It remains an uncited technology convention. The filed cold-start times
+narrow the space of unverified assumptions; they do not close it, and they do
+not touch the one that matters most.
+\end{remark}
+
 \section{Limitations}
 \label{sec:limits}
 
 \begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
 \item \textbf{Operating limits are assumed.} Neither EIA-860 nor EIA-923 carries
   unit-level minimum stable output or ramp rate, and the IGP workbooks expose no
-  traceable unit table for them. \Cref{tab:fleet} therefore rests on technology
-  class conventions. The ramp result of \Cref{sec:results} depends entirely on
-  these values; obtaining verified operating data is the highest-value
-  improvement available to this model.
+  traceable unit table for them. The $P^{\min}$ and ramp columns of
+  \Cref{tab:fleet} therefore rest on technology-class conventions with no
+  citation behind them, and the ramp result of \Cref{sec:results} depends
+  entirely on those values. EIA-860's cold-start field is adjacent evidence, not
+  a substitute: it corroborates four classes, contradicts the combustion
+  turbines, and speaks to none of the three parameters directly. Obtaining
+  verified unit-level operating data remains the highest-value improvement
+  available to this model.
 \item \textbf{The network is assumed} (\Cref{as:network}).
 \item \textbf{Military load is absent}, as above.
 \item \textbf{Vintage mismatch.} The fleet is 2024 vintage; the load series is

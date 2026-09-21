@@ -86,6 +86,45 @@ The baseline therefore applies visible technology assumptions:
 Every fleet row repeats the assumption in `source` and `constraint_source`. Replacing these
 values with a verified operational dataset is the highest-priority model improvement.
 
+### Filed start-time evidence (EIA-860, added Set 9)
+
+The claim above that "neither EIA-860 nor EIA-923 carries unit-level minimum stable output or
+ramp rate" remains true. But EIA-860's `Operable` sheet does carry one adjacent operational
+field that had been overlooked: **`Time from Cold Shutdown to Full Load`**. It is now extracted
+for all 24 units into two columns of `data/processed/oahu_generators.csv`:
+
+- `cold_start_eia860` — the filed code (`10M`, `1H`, `12H`, `OVER`)
+- `cold_start_source` — the provenance string
+
+This is **filed data, not assumption.** It does not replace `P^min`, ramp, or minimum up/down
+time, but it is the first independent evidence about how quickly these specific machines move.
+
+| Units | Prime mover | Filed cold start | Modelled as | Our `MIN_UP` | Verdict |
+|---|---|---|---:|---:|---|
+| Schofield S1–S6 (50.4 MW) | IC | 10 min | fast | 1 h | corroborated |
+| Kalaeloa CT1/CT2 (220 MW) | CT/CA | 1 h / 1 h / 12 h | combined cycle | 6 h | corroborated |
+| Kahe K1–K6, Waiau W3–W8 (936.3 MW) | ST | 12 h | slow steam | 8 h | corroborated |
+| H-POWER GEN1/GEN2 (86 MW) | ST | over 12 h | must-run | 24 h | corroborated |
+| **Waiau W9, W10, CIP1 (215.4 MW)** | **GT** | **12 h** | **quick-start peaker** | **1 h** | **contradicted** |
+
+Four of the five technology classes are corroborated by the filing. The fifth is not. The three
+gas turbines — 14.2% of installed capacity and the only units in the model that can go from
+zero to full output inside one hour — file the same 12-hour cold-start code as the oil steam
+units.
+
+**Three cautions on reading this.** First, cold-start time is not minimum up time, not minimum
+down time, and not ramp rate while synchronised; a unit can be slow to start from cold and still
+ramp quickly once running. Second, the field is a coarse binned code, not a measurement. Third,
+a warm restart is much faster than a cold one, and a peaker cycled daily is rarely cold.
+
+**Direction of the error.** All three cautions soften the finding but none reverse it: if these
+units are in fact slower than modelled, the model **overstates** Oʻahu's flexible capacity, and
+the ramp-driven shortfall reported in Set 9 is a lower bound on the real one. The error runs in
+the conservative direction.
+
+**No model parameters were changed on the strength of this field.** Sensitivity case
+`gt_slow` re-specifies the three units and reports the delta; see `Set 9/DATA_REBUILD.md`.
+
 ## Emissions
 
 For fossil units, operational CO₂ intensity equals EIA-923 heat rate multiplied by the fuel
