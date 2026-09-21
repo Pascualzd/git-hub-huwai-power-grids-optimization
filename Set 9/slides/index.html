@@ -1,0 +1,566 @@
+<title>Set 9 — Machines, Not Dials</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ==================================================================
+   SET 9 -- MACHINES, NOT DIALS
+   Working deck: what Set 9 adds to the dispatch model and what it found.
+
+   Visual system carried over from the Set 8 briefing deliberately -- same
+   project, same figures, same audience. Data colours are the project's own
+   theme.jl encoding so every deck and figure agrees:
+       orange #eb6834 = the assumed exponential world
+       blue   #2a78d6 = the filed load profile
+       green  #0f8a5f = a constraint being ADDED (the ladder)
+   ================================================================== */
+:root{
+  color-scheme: light;
+  --ground:#f2f4f5; --panel:#fbfcfc; --asphalt:#101a20;
+  --ink:#141f26; --ink-2:#4a5d68; --ink-3:#778b96;
+  --rule:#ccd6da; --rule-soft:#e0e7ea;
+  --expo:#eb6834; --real:#2a78d6; --add:#0f8a5f; --crit:#c0392b; --warn:#a9720a;
+  --expo-wash:#fdeee7; --real-wash:#e6eff9; --add-wash:#e3f3ec;
+  --crit-wash:#fae9e7; --warn-wash:#f9f0dd;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--asphalt);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+h1,h2,h3,.ui,.lbl{font-family:"Archivo",ui-sans-serif,system-ui,sans-serif;text-wrap:balance}
+.mono,.num,code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+#stage{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none;
+  background:var(--ground);overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+.slide{position:absolute;inset:0;padding:52px 68px 62px;display:none;flex-direction:column}
+.slide.on{display:flex}
+.slide.dark{background:var(--asphalt);color:#eef3f4}
+.slide.dark h2{color:#fff}
+.slide.dark .lbl{color:#7fb3e8}
+.slide.dark .dek{color:#a9c0c9}
+
+.lbl{font-size:11.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--real);
+  font-weight:600;margin:0 0 14px;flex:none}
+h2{font-size:38px;line-height:1.08;letter-spacing:-.022em;font-weight:700;margin:0;max-width:26ch}
+h2.sm{font-size:31px;max-width:30ch}
+.dek{font-size:18px;line-height:1.45;color:var(--ink-2);margin:12px 0 0;max-width:66ch;flex:none}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:16px}
+.body.top{justify-content:flex-start;padding-top:16px}
+p{margin:0 0 11px;font-size:17.5px;line-height:1.5}
+p:last-child{margin-bottom:0}
+strong{font-weight:600} em{font-style:italic}
+
+.foot{position:absolute;left:68px;right:68px;bottom:24px;display:flex;justify-content:space-between;
+  align-items:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);
+  border-top:1px solid var(--rule-soft);padding-top:8px}
+.slide.dark .foot{color:#5d7480;border-top-color:#22323b}
+#bar{position:absolute;left:0;bottom:0;height:3px;background:var(--real);transition:width .25s}
+
+.title-main{font-size:66px;line-height:1.02;letter-spacing:-.032em;font-weight:700;margin:0;
+  max-width:18ch;color:#fff}
+.title-sub{font-size:20px;line-height:1.5;color:#a9c0c9;max-width:58ch;margin:24px 0 0}
+.byline{font-size:13.5px;color:#7e959f;margin-top:auto;font-family:"Archivo",sans-serif}
+
+table{border-collapse:collapse;width:100%;font-family:"Archivo",sans-serif;font-size:16px}
+th,td{padding:9px 12px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:12.5px;font-weight:600;color:var(--ink-2);border-bottom:2px solid var(--ink);white-space:nowrap}
+tbody td{border-bottom:1px solid var(--rule-soft)}
+tbody tr:last-child td{border-bottom:0}
+td.note,th.note{font-family:"Source Serif 4",serif;color:var(--ink-2);font-size:15.5px;text-align:left}
+td.e{color:var(--expo);font-weight:600} td.r{color:var(--real);font-weight:600}
+td.good{color:var(--add);font-weight:600} td.bad{color:var(--crit);font-weight:600}
+tr.sep td{border-top:2px solid var(--rule)}
+tr.hi td{background:var(--add-wash)}
+table.mini{font-size:15px} table.mini td{padding:7px 10px;white-space:normal}
+
+.panel{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--ink-3);
+  padding:16px 20px}
+.panel.expo{background:var(--expo-wash);border-left-color:var(--expo)}
+.panel.real{background:var(--real-wash);border-left-color:var(--real)}
+.panel.add{background:var(--add-wash);border-left-color:var(--add)}
+.panel.crit{background:var(--crit-wash);border-left-color:var(--crit)}
+.panel.warn{background:var(--warn-wash);border-left-color:var(--warn)}
+.panel .h{font-family:"Archivo",sans-serif;font-size:12.5px;letter-spacing:.13em;
+  text-transform:uppercase;font-weight:600;color:var(--ink-2);margin:0 0 8px}
+.panel.expo .h{color:var(--expo)} .panel.real .h{color:var(--real)}
+.panel.add .h{color:var(--add)} .panel.crit .h{color:var(--crit)} .panel.warn .h{color:var(--warn)}
+.panel p{font-size:16.5px;line-height:1.46}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.cols.n{grid-template-columns:1fr 1.35fr}
+.cols.w{grid-template-columns:1.35fr 1fr}
+
+pre{background:var(--asphalt);color:#d7e3e7;font-family:"IBM Plex Mono",monospace;font-size:15px;
+  padding:14px 18px;margin:0;overflow-x:auto;line-height:1.5}
+pre .c{color:#7e959f} pre .k{color:#7fb3e8} pre .x{color:#f0918a}
+
+.hero{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:110px;line-height:1;
+  letter-spacing:-.04em}
+.hero-cap{font-size:16px;color:var(--ink-2);margin-top:8px;line-height:1.4;max-width:32ch}
+
+ul{margin:0;padding-left:1.1em} li{font-size:17px;line-height:1.45;margin-bottom:8px}
+li:last-child{margin-bottom:0} li::marker{color:var(--ink-3)}
+
+/* the constraint ladder graphic */
+.ladder{display:flex;gap:0;align-items:flex-end;margin:6px 0}
+.rung{flex:1;border:1px solid var(--rule);border-right:0;background:var(--panel);padding:12px 14px}
+.rung:last-child{border-right:1px solid var(--rule)}
+.rung.on{background:var(--add-wash);border-color:var(--add)}
+.rung .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--add);font-weight:600}
+.rung .t{font-family:"Archivo",sans-serif;font-size:14px;line-height:1.3;margin-top:5px}
+
+#notes{position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow-y:auto;background:#0b1216;
+  color:#c9d9df;border-top:2px solid var(--real);padding:15px 24px 18px;
+  font-family:"Source Serif 4",serif;font-size:14.5px;line-height:1.55;display:none;z-index:20}
+#notes.on{display:block}
+#notes b{color:#7fb3e8;font-family:"Archivo",sans-serif;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;display:block;margin-bottom:6px}
+.nt{display:none}
+
+#hud{position:fixed;top:13px;right:15px;display:flex;gap:6px;z-index:15;
+  font-family:"Archivo",sans-serif;font-size:11.5px}
+#hud button{background:rgba(255,255,255,.09);color:#c2d3da;border:1px solid rgba(255,255,255,.2);
+  padding:6px 10px;cursor:pointer;font:inherit}
+#hud button:hover{background:rgba(255,255,255,.18);color:#fff}
+#hud button:focus-visible{outline:2px solid #7fb3e8;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="hud">
+  <button id="bNotes" type="button">Notes&nbsp;<span class="mono">S</span></button>
+  <button id="bFull" type="button">Full screen&nbsp;<span class="mono">F</span></button>
+</div>
+
+<div id="stage">
+
+<!-- 1 -->
+<section class="slide dark on">
+  <div class="body">
+    <p class="lbl">Set 9</p>
+    <h1 class="title-main">Machines, not dials</h1>
+    <p class="title-sub">Set 8 modelled generators as numbers between zero and their rating.
+    Set 9 models them as equipment that has a minimum output, takes time to move, and cannot
+    be switched on and off for free &mdash; and re-runs the whole question.</p>
+  </div>
+  <p class="byline">Pascual Z&aacute;rate &middot; research with Adrian DeClerq<br>
+  O&#699;ahu 9-bus &middot; 24 units &middot; 8,760 chronological hours &middot; Julia + JuMP + HiGHS</p>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Framing</b>Set 9 is a robustness test of Set 8, not a replacement. The question is whether the Set 8 finding survives once the generators behave like real equipment.</div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <p class="lbl">The gap</p>
+  <div class="body">
+    <h2 class="sm">Set 8 described 24 power stations with one line of code</h2>
+    <pre><span class="c"># Set 8, cases.jl</span>
+@variable(m, 0 &lt;= P[g in G] &lt;= case.pmax[g])</pre>
+    <div class="cols">
+      <div class="panel crit">
+        <p class="h">What that permits</p>
+        <ul>
+          <li>A 128 MW steam unit idling at <strong>3 MW</strong></li>
+          <li>Going from <strong>0 to full output in one hour</strong></li>
+          <li>Starting and stopping <strong>every hour, free</strong></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <p class="h">What real equipment does</p>
+        <ul>
+          <li>Has a <strong>minimum stable output</strong> below which it trips</li>
+          <li>Changes output at a <strong>bounded rate</strong></li>
+          <li>Costs money and hours to <strong>start from cold</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>The gap</b>Be concrete about the 3 MW steam unit &mdash; it is the image that makes the problem obvious without jargon. A boiler that size physically cannot run at 3 MW; it would flame out.</div>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+  <p class="lbl">The awkward discovery</p>
+  <div class="body">
+    <h2 class="sm">Two of those constraints were already in the repository</h2>
+    <pre><span class="c"># data/processed/oahu_generators.csv</span>
+name, fuel, <span class="x">p_min_mw</span>, p_max_mw, varcost_usd_per_mwh, <span class="x">ramp_mw_per_hr</span>, ...
+Kahe K6, LSFO, <span class="x">51.5</span>, 128.7, 126.4, <span class="x">38.6</span>, ...</pre>
+    <div class="panel warn">
+      <p class="h">Set 8 read four columns of that file and ignored these two</p>
+      <p>No new data was collected for Set 9. We stopped discarding
+      <code>p_min_mw</code> and <code>ramp_mw_per_hr</code>.</p>
+    </div>
+    <div class="cols">
+      <div class="panel real">
+        <p class="h">Real, filed</p>
+        <p><code>p_max_mw</code> &mdash; EIA-860 2024 summer capacity.<br>
+        <code>varcost</code> &mdash; EIA-923 heat rates, HECO IGP fuel forecast.</p>
+      </div>
+      <div class="panel warn">
+        <p class="h">Assumed, by technology class</p>
+        <p><code>p_min_mw</code> and <code>ramp_mw_per_hr</code> &mdash; the file's own
+        <code>constraint_source</code> column says so. Min up/down times and start-up costs are
+        assumed in Set 9 itself.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Say this plainly</b>Do not claim the ramp rates are measured Hawaii data. Capacity and cost are filed; p_min and ramp are technology-class assumptions, and the data file itself records that. Being the one to point this out is what makes the rest credible.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <p class="lbl">Why this needed a new experiment</p>
+  <div class="body">
+    <h2 class="sm">You cannot bolt a ramp limit onto Set 8</h2>
+    <p class="dek">A ramp constraint compares hour <em>t</em> with hour <em>t&minus;1</em>.
+    Set 8 sampled hours <strong>independently, with replacement</strong> &mdash; hour 5,000 could
+    follow hour 12. There was no previous hour to compare against.</p>
+    <div class="cols">
+      <div class="panel expo">
+        <p class="h">Set 8</p>
+        <p>10,000 <strong>unordered</strong> snapshots. Each one a separate question:
+        <em>can the grid serve this hour?</em></p>
+      </div>
+      <div class="panel add">
+        <p class="h">Set 9</p>
+        <p>8,760 hours <strong>in order</strong>, solved as 24-hour blocks with commitment state
+        carried across every boundary. One continuous question:
+        <em>can the grid run this year?</em></p>
+      </div>
+    </div>
+    <div class="panel">
+      <p>That is a different experimental design, which is why <strong>Set 9 generates all of its
+      own numbers</strong> and reuses none of Set 8's. Results from two different models are not
+      comparable, and Set 8's own finding is exactly about the danger of pretending otherwise.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Methodological point</b>This is the slide that justifies the whole rebuild. Emphasise: we did not patch Set 8, we re-ran everything, because mixing results across two models is the error the project is about.</div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <p class="lbl">The design</p>
+  <div class="body">
+    <h2 class="sm">Two demand worlds, four constraint rungs, eight fresh runs</h2>
+    <div class="ladder">
+      <div class="rung"><div class="n">RUNG 0</div><div class="t"><code>:lp</code><br>Set 8's constraint set, as a control</div></div>
+      <div class="rung on"><div class="n">+ RUNG 1</div><div class="t"><code>:pmin</code><br>minimum stable generation</div></div>
+      <div class="rung on"><div class="n">+ RUNG 2</div><div class="t"><code>:ramp</code><br>hour-to-hour ramp limits</div></div>
+      <div class="rung on"><div class="n">+ RUNG 3</div><div class="t"><code>:full</code><br>min up/down times, start-up costs</div></div>
+    </div>
+    <div class="panel add">
+      <p class="h">One change per rung, on purpose</p>
+      <p>Each rung adds exactly one constraint, so every movement in the results is
+      <strong>attributable to a named cause</strong>. Jumping straight to the fully constrained
+      model would produce a number nobody could decompose &mdash; which is the mistake Set 8
+      spent eighteen pages warning about.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>The ladder</b>This design choice is worth defending out loud: it costs four times the compute and it is the only way to say WHICH constraint caused WHICH change.</div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <p class="lbl">The two demand worlds</p>
+  <div class="body">
+    <h2 class="sm">Identical mean. Everything else different.</h2>
+    <table>
+      <thead><tr><th>8,760-hour sequence</th><th>mean</th><th>min</th><th>max</th><th>CV</th><th>mean hourly swing</th></tr></thead>
+      <tbody>
+        <tr><td><strong>REAL</strong> &mdash; the filed profile</td><td class="r">743.9</td><td>472.6</td><td>1,054.3</td><td class="r">0.168</td><td class="r">41.9 MW</td></tr>
+        <tr><td><strong>EXPO</strong> &mdash; Exp(1) per bus per hour</td><td class="e">744.7</td><td>61.0</td><td>4,240.0</td><td class="e">0.533</td><td class="e">428.9 MW</td></tr>
+      </tbody>
+    </table>
+    <div class="cols n">
+      <div class="panel">
+        <p class="h">Calibrated, not cherry-picked</p>
+        <p>The exponential world is scaled so its island mean <strong>matches the real
+        record's own mean</strong>. Same average demand; only the shape differs.</p>
+      </div>
+      <div class="panel expo">
+        <p class="h">The number that matters for Set 9</p>
+        <p>The exponential world demands the fleet move <strong>428.9 MW between consecutive
+        hours on average</strong>, against a real record that moves 41.9. Ten times.
+        That is a question about <em>machines</em>, and Set 8 had no way to ask it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Set up the punchline</b>The 41.9 vs 428.9 contrast is the hinge of the whole deck. Say it slowly. An exponential demand model is not merely pessimistic about how MUCH power is needed &mdash; it is pessimistic in a way no physical fleet could ever track.</div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <p class="lbl">Results &middot; all eight runs, generated by Set 9</p>
+  <div class="body">
+    <h2 class="sm">What each constraint changed</h2>
+    <table>
+      <thead><tr><th>World</th><th>Rung</th><th>Hours shedding</th><th>A line at limit</th><th>Cost, M$/yr</th></tr></thead>
+      <tbody>
+        <tr><td class="r">REAL</td><td class="note"><code>:lp</code> Set 8 constraint set</td><td class="good">0.00%</td><td>92.23%</td><td>689.05</td></tr>
+        <tr><td class="r">REAL</td><td class="note"><code>:pmin</code> + min stable output</td><td class="good">0.00%</td><td>69.17%</td><td>693.72</td></tr>
+        <tr><td class="r">REAL</td><td class="note"><code>:ramp</code> + ramp limits</td><td class="bad">0.58%</td><td>85.80%</td><td>689.62</td></tr>
+        <tr class="hi"><td class="r">REAL</td><td class="note"><code>:full</code> + min up/down, start-ups</td><td class="bad">0.45%</td><td>52.79%</td><td>690.72</td></tr>
+        <tr class="sep"><td class="e">EXPO</td><td class="note"><code>:lp</code> Set 8 constraint set</td><td class="bad">20.47%</td><td>60.06%</td><td>651.18</td></tr>
+        <tr><td class="e">EXPO</td><td class="note"><code>:pmin</code> + min stable output</td><td class="bad">20.63%</td><td>42.84%</td><td>656.94</td></tr>
+        <tr><td class="e">EXPO</td><td class="note"><code>:ramp</code> + ramp limits</td><td class="bad">21.87%</td><td>40.27%</td><td>666.98</td></tr>
+        <tr class="hi"><td class="e">EXPO</td><td class="note"><code>:full</code> + min up/down, start-ups</td><td class="bad">26.74%</td><td>35.41%</td><td>710.20</td></tr>
+      </tbody>
+    </table>
+    <div class="panel warn">
+      <p class="h">How hard each cell was to solve is itself a result</p>
+      <p>Real load at Set 8's constraint set solved in <strong>10 seconds</strong>. The
+      exponential world fully constrained took <strong>39 minutes</strong>, and 46 of its 365
+      daily blocks hit the time cap. The fleet is being asked to follow demand it physically
+      cannot, so the solver must search an enormous space of which customers to cut off and
+      when. <em>Difficulty of solution is evidence about the demand model.</em></p>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>The grid of results</b>Walk down the REAL block first, then the EXPO block. The three findings on the next slides all come out of this table.</div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <p class="lbl">Finding one</p>
+  <div class="body">
+    <h2 class="sm">The Set 8 conclusion survives the physics</h2>
+    <div class="cols n" style="align-items:center">
+      <div>
+        <div class="hero" style="color:var(--add)">0.45<span style="font-size:56px">%</span></div>
+        <p class="hero-cap"><strong>real load</strong> &mdash; hours needing customers cut off,
+        fully constrained fleet</p>
+        <div class="hero" style="color:var(--expo);margin-top:18px">26.7<span style="font-size:60px">%</span></div>
+        <p class="hero-cap"><strong>assumed exponential</strong> &mdash; same grid, same solver,
+        same mean demand, same constraints</p>
+      </div>
+      <div class="panel add">
+        <p class="h">And it holds at every rung</p>
+        <p>Adding minimum stable generation, ramp limits, minimum up and down times and start-up
+        costs does <strong>not</strong> close the gap &mdash; it <em>widens</em> it. Fully
+        constrained, the assumed distribution produces a blackout risk <strong>59 times</strong>
+        the one real load produces.</p>
+        <p>Measured in energy rather than hours the gap is starker still:
+        <strong>705,776 MWh</strong> not served against <strong>29 MWh</strong>.</p>
+        <p>Set 8's central claim was not an artefact of an over-simplified generator model.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>The robustness result</b>This is the reassuring finding and the reason Set 9 was worth running. The obvious attack on Set 8 &mdash; "your generators were unrealistic" &mdash; does not land.</div>
+</section>
+
+<!-- 9 -->
+<section class="slide">
+  <p class="lbl">Finding two &middot; new</p>
+  <div class="body">
+    <h2 class="sm">A failure mode Set 8 could not see</h2>
+    <div class="cols n" style="align-items:center">
+      <div>
+        <div class="hero" style="color:var(--crit)">0.58<span style="font-size:56px">%</span></div>
+        <p class="hero-cap">of hours under <strong>real load</strong> where the grid must cut
+        customers off &mdash; once ramp limits exist. About <strong>51 hours a year</strong>.</p>
+      </div>
+      <div class="panel crit">
+        <p class="h">Not a capacity problem. A following problem.</p>
+        <p>Set 8 reported <strong>zero</strong> shedding under real load, and that was correct
+        for the question it asked: there is always enough capacity.</p>
+        <p>But capacity is not the same as <em>reachability in time</em>. On a handful of
+        evenings the island's load climbs faster than the committed fleet can follow, and the
+        shortfall is real even though the megawatts exist.</p>
+        <p>Set 8 could not detect this, because its hours had no order.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>The genuinely new result</b>This is what Set 9 buys. It is small but it is not zero, and it is a category of risk the earlier model was structurally blind to. Do not oversell it: 51 hours, on an assumed set of ramp rates.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide">
+  <p class="lbl">Finding three &middot; the uncomfortable one</p>
+  <div class="body">
+    <h2 class="sm">The congestion number is not robust</h2>
+    <p class="dek">Same demand. Same network. Same year. Only the generator constraint set
+    changed:</p>
+    <table>
+      <thead><tr><th>Real load, hours with a line at its limit</th><th>%</th><th class="note">&nbsp;</th></tr></thead>
+      <tbody>
+        <tr><td><code>:lp</code> &mdash; Set 8's constraint set</td><td class="bad">92.23%</td><td class="note">what Set 8 reported</td></tr>
+        <tr><td><code>:pmin</code> &mdash; + minimum stable output</td><td>69.17%</td><td class="note">&minus;23 points</td></tr>
+        <tr><td><code>:ramp</code> &mdash; + ramp limits</td><td>85.80%</td><td class="note">back up again</td></tr>
+        <tr class="hi"><td><code>:full</code> &mdash; + min up/down, start-ups</td><td class="good">52.79%</td><td class="note">&minus;39 points from the top</td></tr>
+      </tbody>
+    </table>
+    <div class="panel warn">
+      <p class="h">Why, and what it means</p>
+      <p>Commitment decides <em>which</em> units run and therefore <em>where</em> power enters
+      the network &mdash; and that changes the flows. Set 8's model could spread output thinly
+      across all 24 units; a committed fleet cannot.</p>
+      <p>So the honest statement is: <strong>the direction is robust, the magnitude is not.</strong>
+      Real load congests more than exponential load at every rung. But a congestion
+      <em>percentage</em> should never be quoted without the commitment model beside it.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Do not hide this</b>It partly undercuts a Set 8 headline, and reporting it is the right call. Note the structure: it is Set 8's own lesson applied one level up &mdash; there, the demand assumption moved the answer; here, the commitment assumption does.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide">
+  <p class="lbl">Methods &middot; a bug worth reporting</p>
+  <div class="body">
+    <h2 class="sm">The first version said real load sheds 95% of the year</h2>
+    <p class="dek">It does not. That number was an artefact of the constraint formulation, and
+    finding it is the reason the ladder design was worth the compute.</p>
+    <div class="cols">
+      <div class="panel crit">
+        <p class="h">The trap</p>
+        <p>Every steam unit here has <strong>p_min = 40%</strong> of capacity but a ramp rate of
+        <strong>30% per hour</strong>.</p>
+        <p>Write the ramp limit the obvious way &mdash;
+        <code>|P[t] &minus; P[t&minus;1]| &le; ramp</code> &mdash; and starting up means jumping
+        from 0 to p_min in one hour, which exceeds the ramp. Every steam unit becomes
+        <strong>permanently unstartable.</strong></p>
+      </div>
+      <div class="panel add">
+        <p class="h">The fix</p>
+        <p>Start-up and shut-down get their own ramp allowance, so a unit coming online arrives
+        at its minimum output legitimately. Standard in the literature; easy to omit.</p>
+        <p>The tell was the model running expensive peakers around the clock while cheap steam
+        sat idle &mdash; an answer that made no economic sense, which is usually how a
+        formulation error announces itself.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Show your working</b>Including a bug you found and fixed is not a weakness in a research talk &mdash; it demonstrates the verification actually happened. The economic-nonsense tell is a genuinely useful debugging heuristic to share.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide">
+  <p class="lbl">What is real and what is assumed</p>
+  <div class="body">
+    <h2 class="sm">The honest inventory</h2>
+    <table class="mini">
+      <thead><tr><th>Ingredient</th><th>Status</th><th class="note">Source</th></tr></thead>
+      <tbody>
+        <tr><td>Generator capacities</td><td class="good">REAL</td><td class="note">EIA-860 2024 summer capacity, 24 units</td></tr>
+        <tr><td>Heat rates and fuel costs</td><td class="good">REAL</td><td class="note">EIA-923 2024, HECO IGP 2022 fuel forecast</td></tr>
+        <tr><td>Hourly island <em>total</em></td><td class="good">FILED</td><td class="note">HECO IGP Workbook 3, 2021 base scenario &mdash; a filed planning profile, net of behind-the-meter layers</td></tr>
+        <tr><td>Minimum stable output, ramp rates</td><td class="bad">ASSUMED</td><td class="note">by technology class &mdash; recorded in the data file itself</td></tr>
+        <tr><td>Min up/down times, start-up costs</td><td class="bad">ASSUMED</td><td class="note">conventional values, declared in <code>fleet.jl</code></td></tr>
+        <tr><td>Demand split across the 9 buses</td><td class="bad">RECONSTRUCTED</td><td class="note">EIA-861 sector weights on Census population and LODES workplace jobs; v3 adds OpenEI reference-building hourly shapes &mdash; <code>DATA_REBUILD.md</code></td></tr>
+        <tr><td>Network topology, line ratings</td><td class="bad">ASSUMED</td><td class="note">9-bus sketch &mdash; inherited from Set 8 unchanged</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Keep this slide</b>Every deck in this project carries one. It is what lets you state findings confidently: the audience already knows exactly which parts you are and are not standing behind.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide">
+  <p class="lbl">Still not fixed</p>
+  <div class="body">
+    <h2 class="sm">What Set 9 does not answer</h2>
+    <table class="mini">
+      <tbody>
+        <tr><td><strong>Per-bus demand is reconstructed, not metered</strong></td><td class="note">The filed profile is island-total only. The v3 rebuild does make the mix move hour to hour &mdash; Honolulu runs about 52% at midnight to 85% at midday &mdash; but it is built from typical-year reference-building shapes, not O&#699;ahu&rsquo;s metered sector loads. The direction moves; whether it moves <em>correctly</em> is unverified.</td></tr>
+        <tr><td><strong>No forced outages</strong></td><td class="note">Every unit is assumed always available. For an adequacy study this remains the largest single gap.</td></tr>
+        <tr><td><strong>No N&minus;1 security</strong></td><td class="note">On an island with no imports, surviving the loss of the largest unit is the real planning constraint.</td></tr>
+        <tr><td><strong>No storage, no reserves</strong></td><td class="note">Kapolei-scale batteries would absorb exactly the ramp events Finding Two identifies.</td></tr>
+        <tr><td><strong>Still DC power flow</strong></td><td class="note">No voltage, no reactive power, no losses.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Next steps</b>Storage is the natural Set 10: Finding Two identifies a ramp-following problem, and a battery is precisely the device that solves it. That is a clean, motivated next experiment rather than a generic wish list.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide">
+  <p class="lbl">In closing</p>
+  <div class="body">
+    <h2>Three sentences</h2>
+    <div class="panel add">
+      <p class="h">One &mdash; the reassurance</p>
+      <p>Set 8's finding was not an artefact of treating generators as dials. The gap between
+      assumed and real demand survives every constraint we added.</p>
+    </div>
+    <div class="panel crit">
+      <p class="h">Two &mdash; the new risk</p>
+      <p>Real load out-runs the committed fleet in about <strong>51 hours a year</strong> &mdash;
+      a shortfall of <em>speed</em>, not capacity, and the earlier model was blind to it. It is
+      small: 37 MWh across the year. It is not zero.</p>
+    </div>
+    <div class="panel warn">
+      <p class="h">Three &mdash; the caution</p>
+      <p>Congestion frequency moved <strong>39 points</strong> across constraint sets on
+      identical demand. The direction is robust; the number is not. Never quote one without
+      saying which generator model produced it.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Set 9 &middot; machines, not dials</span><span class="pg"></span></div>
+  <div class="nt"><b>Close</b>End on the third one. It is the sentence that generalises beyond this grid, and it is the same shape as Set 8's own lesson &mdash; an assumption nobody states is setting the headline number.</div>
+</section>
+
+</div>
+
+<div id="notes"></div>
+<div id="bar"></div>
+
+<script>
+const stage=document.getElementById("stage");
+const slides=Array.from(document.querySelectorAll(".slide"));
+const notes=document.getElementById("notes"), bar=document.getElementById("bar");
+const N=slides.length;
+slides.forEach(function(s,i){
+  const pg=s.querySelector(".pg");
+  if(pg) pg.textContent=String(i+1).padStart(2,"0")+" / "+String(N).padStart(2,"0");
+});
+let i=0, notesOn=false;
+function fit(){
+  const pad=24;
+  const k=Math.min((window.innerWidth-pad)/1280,
+                   (window.innerHeight-pad-(notesOn?window.innerHeight*0.38:0))/720);
+  stage.style.transform="scale("+Math.max(0.1,k)+")";
+}
+function show(n){
+  i=Math.max(0,Math.min(N-1,n));
+  slides.forEach(function(s,k){ s.classList.toggle("on",k===i) });
+  bar.style.width=((i)/(N-1)*100)+"%";
+  const nt=slides[i].querySelector(".nt");
+  notes.innerHTML=nt?nt.innerHTML:"<b>No notes</b>";
+  if(location.hash!=="#"+(i+1)) history.replaceState(null,"","#"+(i+1));
+  fit();
+}
+function step(d){ show(i+d) }
+document.addEventListener("keydown",function(e){
+  if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"||e.key==="ArrowDown"){e.preventDefault();step(1)}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"||e.key==="ArrowUp"){e.preventDefault();step(-1)}
+  else if(e.key==="Home"){show(0)} else if(e.key==="End"){show(N-1)}
+  else if(e.key==="s"||e.key==="S"){toggleNotes()}
+  else if(e.key==="f"||e.key==="F"){toggleFull()}
+});
+document.addEventListener("click",function(e){
+  if(e.target.closest("#hud")||e.target.closest("#notes")) return;
+  if(window.getSelection&&String(window.getSelection())) return;
+  step(1);
+});
+function toggleNotes(){ notesOn=!notesOn; notes.classList.toggle("on",notesOn); fit() }
+function toggleFull(){
+  if(!document.fullscreenElement){document.documentElement.requestFullscreen?.()}
+  else{document.exitFullscreen?.()}
+}
+document.getElementById("bNotes").addEventListener("click",function(e){e.stopPropagation();toggleNotes()});
+document.getElementById("bFull").addEventListener("click",function(e){e.stopPropagation();toggleFull()});
+window.addEventListener("resize",fit);
+document.addEventListener("fullscreenchange",fit);
+const start=parseInt((location.hash||"#1").slice(1),10);
+show(isFinite(start)&&start>0?start-1:0);
+</script>

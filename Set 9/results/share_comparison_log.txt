@@ -1,0 +1,46 @@
+============================================================================
+SET 9 -- effect of the per-bus load allocation, everything else held fixed
+============================================================================
+bus                v1 pop v2 rebuilt     change
+------------------------------------------------
+Honolulu           39.87%     56.15%    +16.28pp
+Ewa-Central        32.54%     25.32%     -7.22pp
+Koolaupoko         11.93%      7.18%     -4.75pp
+Waianae             5.11%      2.26%     -2.86pp
+Wahiawa             4.10%      2.21%     -1.89pp
+Ewa-West            2.96%      4.49%     +1.53pp
+Koolauloa           2.15%      1.28%     -0.87pp
+Waialua             1.33%      1.12%     -0.21pp
+Kahe                0.00%      0.00%     +0.00pp
+
+  v1 / lp ... 10s  shed 0.00%  atlimit 92.23%  cost 689.05 M
+  v1 / pmin ... 41s  shed 0.00%  atlimit 69.17%  cost 693.72 M
+  v1 / ramp ... 414s  shed 0.58%  atlimit 85.80%  cost 689.62 M
+  v1 / full ... 316s  shed 0.45%  atlimit 52.79%  cost 690.72 M
+  v2 / lp ... 6s  shed 0.00%  atlimit 92.81%  cost 687.41 M
+  v2 / pmin ... 34s  shed 0.00%  atlimit 58.50%  cost 691.66 M
+  v2 / ramp ... 455s  shed 0.64%  atlimit 86.55%  cost 687.80 M
+  v2 / full ... 355s  shed 0.16%  atlimit 49.82%  cost 688.95 M
+
+============================================================================
+RESULT -- same demand, same fleet, same hours. Only the split changed.
+============================================================================
+8×8 DataFrame
+ Row │ shares  rung    cost_musd  p_shed    ens_mwh  p_at_limit  mean_lines_at_limit  solve_s
+     │ String  String  Float64    Float64   Float64  Float64     Float64              Float64
+─────┼──────────────────────────────────────────────────────────────────────────────────────────
+   1 │ v1      lp        689.054  0.0        0.0        92.226              0.927626    9.66062
+   2 │ v1      pmin      693.716  0.0        0.0        69.1667             0.697032   41.1986
+   3 │ v1      ramp      689.617  0.582192  37.428      85.7991             0.86347   413.879
+   4 │ v1      full      690.722  0.445205  28.8757     52.7854             0.532763  315.914
+   5 │ v2      lp        687.408  0.0        0.0        92.8082             0.930594    6.18288
+   6 │ v2      pmin      691.659  0.0        0.0        58.5046             0.585046   33.9044
+   7 │ v2      ramp      687.802  0.639269  39.7374     86.5525             0.86758   454.653
+   8 │ v2      full      688.949  0.159817  10.0533     49.8174             0.498858  354.782
+
+lp      congestion  92.23% ->  92.81%  ( +0.58 pp)   shed  0.00% ->  0.00%   cost -1.65 M
+pmin    congestion  69.17% ->  58.50%  (-10.66 pp)   shed  0.00% ->  0.00%   cost -2.06 M
+ramp    congestion  85.80% ->  86.55%  ( +0.75 pp)   shed  0.58% ->  0.64%   cost -1.81 M
+full    congestion  52.79% ->  49.82%  ( -2.97 pp)   shed  0.45% ->  0.16%   cost -1.77 M
+
+written to /tmp/claude-0/-home-claude/d763450d-2c10-555b-89ad-10ea326140b1/scratchpad/Set 9/results

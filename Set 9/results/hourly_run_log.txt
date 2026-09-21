@@ -1,0 +1,48 @@
+==============================================================================
+SET 9 -- hourly per-bus demand vs frozen shares
+==============================================================================
+v1    island total 743.9 MW mean | share-matrix rank 1 | Honolulu share 39.9%-39.9%
+v2    island total 743.9 MW mean | share-matrix rank 1 | Honolulu share 56.1%-56.1%
+v3    island total 743.9 MW mean | share-matrix rank 2 | Honolulu share 51.8%-85.4%
+
+(rank 1 means the demand direction cannot move at all)
+
+  v1 / lp ... 12s  shed 0.00%  atlimit 92.23%  cost 689.05 M
+  v1 / pmin ... 55s  shed 0.00%  atlimit 69.17%  cost 693.72 M
+  v1 / ramp ... 566s  shed 0.58%  atlimit 85.80%  cost 689.62 M
+  v1 / full ... 423s  shed 0.45%  atlimit 52.79%  cost 690.72 M
+  v2 / lp ... 8s  shed 0.00%  atlimit 92.81%  cost 687.41 M
+  v2 / pmin ... 45s  shed 0.00%  atlimit 58.50%  cost 691.66 M
+  v2 / ramp ... 616s  shed 0.64%  atlimit 86.55%  cost 687.80 M
+  v2 / full ... 478s  shed 0.16%  atlimit 49.82%  cost 688.95 M
+  v3 / lp ... 8s  shed 0.00%  atlimit 94.75%  cost 688.56 M
+  v3 / pmin ... 47s  shed 0.00%  atlimit 59.67%  cost 693.39 M
+  v3 / ramp ... 565s  shed 0.87%  atlimit 90.26%  cost 689.11 M
+  v3 / full ... 476s  shed 0.09%  atlimit 59.26%  cost 689.91 M
+
+==============================================================================
+RESULT -- same island total every hour. Only the split across buses differs.
+==============================================================================
+12×8 DataFrame
+ Row │ demand  rung    cost_musd  p_shed     ens_mwh   p_at_limit  mean_lines_at_limit  solve_s
+     │ String  String  Float64    Float64    Float64   Float64     Float64              Float64
+─────┼────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ v1      lp        689.054  0.0         0.0         92.226              0.927626   12.0175
+   2 │ v1      pmin      693.716  0.0         0.0         69.1667             0.697032   54.8362
+   3 │ v1      ramp      689.617  0.582192   37.428       85.7991             0.86347   566.059
+   4 │ v1      full      690.722  0.445205   28.8757      52.7854             0.532763  423.266
+   5 │ v2      lp        687.408  0.0         0.0         92.8082             0.930594    7.80692
+   6 │ v2      pmin      691.659  0.0         0.0         58.5046             0.585046   45.068
+   7 │ v2      ramp      687.802  0.639269   39.7374      86.5525             0.86758   616.265
+   8 │ v2      full      688.949  0.159817   10.0533      49.8174             0.498858  478.301
+   9 │ v3      lp        688.565  0.0         0.0         94.7489             0.952626    8.05083
+  10 │ v3      pmin      693.386  0.0         0.0         59.6689             0.601826   47.1447
+  11 │ v3      ramp      689.109  0.86758    56.0089      90.2626             0.908105  565.042
+  12 │ v3      full      689.91   0.0913242   6.50037     59.258              0.59726   476.031
+
+lp     congestion  92.23% /  92.81% /  94.75%   shed  0.00% /  0.00% /  0.00%   (v1/v2/v3)
+pmin   congestion  69.17% /  58.50% /  59.67%   shed  0.00% /  0.00% /  0.00%   (v1/v2/v3)
+ramp   congestion  85.80% /  86.55% /  90.26%   shed  0.58% /  0.64% /  0.87%   (v1/v2/v3)
+full   congestion  52.79% /  49.82% /  59.26%   shed  0.45% /  0.16% /  0.09%   (v1/v2/v3)
+
+written to /tmp/claude-0/-home-claude/d763450d-2c10-555b-89ad-10ea326140b1/scratchpad/Set 9/results
